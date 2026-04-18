@@ -5,14 +5,20 @@ export async function createProduct(req, res) {
     const { title, description, priceAmount, priceCurrency } = req.body
     const seller = req.user
 
-    const images = await Promise.all(req.files.map(async (file) => {
-        return await uploadImage({
+    console.log("req.files received:", req.files?.length, req.files?.map(f => f.originalname))
+
+    const image = await Promise.all((req.files || []).map(async (file) => {
+        const result = await uploadImage({
             buffer: file.buffer,
             fileName: file.originalname
         })
+        console.log("ImageKit full result keys:", Object.keys(result))
+        console.log("result.url:", result.url)
+        return { url: result.url }
     }))
 
-  
+    console.log("Final image array to save:", JSON.stringify(image))
+
     const product = await productModel.create({
         title,
         description,
@@ -21,7 +27,7 @@ export async function createProduct(req, res) {
             currency: priceCurrency || "INR"
         },
 
-        images,
+        image,
 
         seller: seller._id
     })
@@ -30,6 +36,23 @@ export async function createProduct(req, res) {
         Message: "Product created successfully",
         success: true,
         product
+    })
+
+}
+
+export async function getSellerProduct(req, res) {
+
+    const seller = req.user
+
+    const products = await productModel.find({
+        seller: seller._id
+    })
+
+    res.status(200).json({
+        Message: "Seller products retrieved successfully",
+        success: true,
+        products
+
     })
 
 }

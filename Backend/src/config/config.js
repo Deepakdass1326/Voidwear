@@ -20,6 +20,12 @@ if(!process.env.GOOGLE_CLIENT_SECRET){
 if (!process.env.IMAGEKIT_KEY){
     throw new Error("IMAGEKIT_KEY is not defined in environment variables")
 }
+if (!process.env.IMAGEKIT_PUBLIC_KEY){
+    throw new Error("IMAGEKIT_PUBLIC_KEY is not defined in environment variables")
+}
+if (!process.env.IMAGEKIT_URL_ENDPOINT){
+    throw new Error("IMAGEKIT_URL_ENDPOINT is not defined in environment variables")
+}
 
 
 export const config = {
@@ -27,5 +33,7 @@ export const config = {
     JWT_SECRET: process.env.JWT_SECRET,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-    IMAGEKIT_KEY: process.env.IMAGEKIT_KEY
+    IMAGEKIT_KEY: process.env.IMAGEKIT_KEY,
+    IMAGEKIT_PUBLIC_KEY: process.env.IMAGEKIT_PUBLIC_KEY,
+    IMAGEKIT_URL_ENDPOINT: process.env.IMAGEKIT_URL_ENDPOINT
 }
