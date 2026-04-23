@@ -158,7 +158,7 @@ function ProductCard({ product }) {
   const symbol = CURRENCY_SYMBOL[product.price?.currency] ?? '₹';
 
   // Debug: log product to see exact image structure from backend
-  console.log('Product data:', JSON.stringify(product, null, 2));
+ 
 
   const hasImage = product.image?.length > 0 || product.images?.length > 0;
   const imgUrl = (product.image?.[0]?.url) || (product.images?.[0]?.url) || null;
@@ -214,9 +214,7 @@ function ProductCard({ product }) {
 
         <div className="flex items-center justify-between pt-2 border-t border-gray-100 mt-1">
           <span className="text-[10px] text-gray-300 font-medium">{date}</span>
-          <span className="text-[10px] font-mono text-gray-300 truncate max-w-[100px]" title={product._id}>
-            #{product._id?.slice(-6)}
-          </span>
+         
         </div>
       </div>
     </div>

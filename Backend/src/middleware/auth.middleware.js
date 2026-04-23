@@ -3,7 +3,29 @@ import { config } from "../config/config.js"
 import userModel from "../models/user.models.js"
 
 
-export const authenticateSeller = async( req, res, next) => {
+export const authenticateUser = async (req, res, next) => {
+    const token = req.cookies
+        .token
+
+    if (!token) {
+        return res.status(401).json({
+            message: "Unauthorized"
+        })
+    }
+
+    try {
+        const decoded = jwt.verify(token, config.JWT_SECRET)
+        const user = await userModel.findById(decoded.id)
+        req.user = user
+        next()
+    } catch (error) {
+        return res.status(401).json({
+         message: "Unauthorized"
+        })
+    }
+}
+
+export const authenticateSeller = async (req, res, next) => {
     const token = req.cookies.token
 
     if (!token) {
@@ -15,26 +37,26 @@ export const authenticateSeller = async( req, res, next) => {
     try {
         const decoded = jwt.verify(token, config.JWT_SECRET)
 
-        const user = await userModel.findById ( decoded.id)
+        const user = await userModel.findById(decoded.id)
 
-       if (!user) {
-        return res.status(401).json({
-            message: "Unauthorized"
-        })
-       }
+        if (!user) {
+            return res.status(401).json({
+                message: "Unauthorized"
+            })
+        }
 
-       if (user.role !== "seller") {
-        return res.status(403).json( {
-            message: "Forbidden"
-        })
-       }
+        if (user.role !== "seller") {
+            return res.status(403).json({
+                message: "Forbidden"
+            })
+        }
 
-       req.user = user
+        req.user = user
 
-       next ()
+        next()
 
     } catch (error) {
-      
+
         console.log(error)
 
         return res.status(401).json({
@@ -45,3 +67,4 @@ export const authenticateSeller = async( req, res, next) => {
 
     }
 }
+

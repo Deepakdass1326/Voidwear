@@ -24,12 +24,17 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await handleLogin({
+            const user = await handleLogin({
                 email: formData.email,
                 password: formData.password
             });
-            console.log("Login successful");
-            navigate("/");
+
+            if (user.role == "buyer") {
+                navigate("/")
+            } else if (user.role == "seller") {
+                navigate("/seller/sellerProducts")
+            }
+
         } catch (error) {
             console.error("Login failed", error);
         }

@@ -1,6 +1,7 @@
 import userModel from "../models/user.models.js";
 import jwt from "jsonwebtoken"
 import { config } from "../config/config.js";
+import { use } from "passport";
 
 
 async function sendToken(user, res, message) {
@@ -82,10 +83,10 @@ export const login = async (req, res) => {
 
 }
 
-export const googleCallback = async ( req, res) => {
-  const { id, displayName, emails, photos} = req.user
+export const googleCallback = async (req, res) => {
+  const { id, displayName, emails, photos } = req.user
 
-  const email = emails[0].value 
+  const email = emails[0].value
   const profilePIc = photos[0].value
 
   let user = await userModel.findOne({
@@ -93,24 +94,42 @@ export const googleCallback = async ( req, res) => {
   })
 
   if (!user) {
-     user = await userModel.create({
+    user = await userModel.create({
       email,
       googleId: id,
       fullname: displayName,
-     })
+    })
   }
-  
+
   const token = jwt.sign({
     id: user._id,
-    
+
   }, config.JWT_SECRET, {
 
     expiresIn: "7d"
   })
 
-  res.cookie("token" , token)
+  res.cookie("token", token)
 
 
   res.redirect("http://localhost:5173/dashboard")
-  
+
+}
+
+export const getMe = async (req, res) => {
+  const user = req.user
+
+  res.status(200).json({
+
+    user: {
+      id: user._id,
+      email: user.email,
+      contact: user.contact,
+      fullname: user.fullname,
+      role: user.role
+    },
+
+    message: "User fetched successfully",
+    success: true
+  })
 }
