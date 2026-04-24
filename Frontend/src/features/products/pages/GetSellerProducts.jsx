@@ -155,6 +155,7 @@ export default function GetSellerProducts() {
 
 /* ─── Product Card ─── */
 function ProductCard({ product }) {
+  const navigate = useNavigate();
   const symbol = CURRENCY_SYMBOL[product.price?.currency] ?? '₹';
 
   // Debug: log product to see exact image structure from backend
@@ -168,7 +169,9 @@ function ProductCard({ product }) {
   });
 
   return (
-    <div className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md hover:border-gray-300 transition-all duration-200">
+    <div 
+     onClick={() => navigate('/seller/product/' + product._id)}
+     className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-md hover:border-gray-300 transition-all duration-200 cursor-pointer">
 
       {/* Image */}
       <div className="aspect-[4/3] bg-gray-100 overflow-hidden relative">
