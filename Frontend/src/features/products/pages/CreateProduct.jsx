@@ -85,7 +85,7 @@ export default function CreateProduct() {
 
             await handleCreateProduct(formData);
             showToast('✓  Product created successfully');
-            setTimeout(() => navigate("/seller/products"), 1500);
+            setTimeout(() => navigate("/seller/sellerProducts"), 1500);
         } catch {
             showToast('❌  Failed to create product. Try again.');
         } finally {

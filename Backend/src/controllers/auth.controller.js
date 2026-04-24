@@ -1,7 +1,6 @@
 import userModel from "../models/user.models.js";
 import jwt from "jsonwebtoken"
 import { config } from "../config/config.js";
-import { use } from "passport";
 
 
 async function sendToken(user, res, message) {

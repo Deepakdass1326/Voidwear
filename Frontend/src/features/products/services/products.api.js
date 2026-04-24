@@ -15,3 +15,13 @@ export async function getAllProduct() {
     const response = await productApiInstance.get("/seller")
     return response.data
 }
+
+export async function getProducts(){
+    const response = await productApiInstance.get("/")
+    return response.data
+}
+
+export async function getProductDetails(id){
+    const response = await productApiInstance.get(`/detail/${id}`)
+    return response.data
+}
