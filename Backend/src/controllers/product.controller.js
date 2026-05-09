@@ -76,3 +76,44 @@ export async function getProductDetails(req, res) {
         product
     })
 }
+
+
+export async function addProductVariants (req, res) {
+    
+    const productId = req.params.productId
+
+    const product = await productModel.findOne({
+        _id: productId,
+        seller: req.user.id
+    })
+
+    if (!product) {
+        return res.status(404).json({
+            Message: "Product not found",
+            success: false
+        })
+    }
+    const files = req.files
+    const images = []
+
+    if (files || files.length !== 0) {
+        (await Promise.all(files.map(async (file) => {
+          const image = await uploadFile({
+            buffer: file.buffer,
+            fileName: file.originalname
+          })
+          
+          return image
+
+        }))).map(image => images.push(image))
+    }
+
+
+
+    const price = req.body.priceAmount
+    const stock = req.body.stock
+    const attributes = JSON.parse(req.body.attributes || "{}")
+
+
+    console.log(price, stock, attributes, images, product)
+}
