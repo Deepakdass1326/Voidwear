@@ -93,19 +93,18 @@ export async function addProductVariants (req, res) {
             success: false
         })
     }
-    const files = req.files
+    const files = req.files || []
     const images = []
 
-    if (files || files.length !== 0) {
-        (await Promise.all(files.map(async (file) => {
-          const image = await uploadFile({
-            buffer: file.buffer,
-            fileName: file.originalname
-          })
-          
-          return image
-
-        }))).map(image => images.push(image))
+    if (files.length > 0) {
+        const uploadedImages = await Promise.all(files.map(async (file) => {
+            const result = await uploadImage({
+                buffer: file.buffer,
+                fileName: file.originalname
+            })
+            return { url: result.url }
+        }))
+        images.push(...uploadedImages)
     }
 
 
@@ -116,4 +115,22 @@ export async function addProductVariants (req, res) {
 
 
     console.log(price, stock, attributes, images, product)
+
+    product.variants.push({
+        price: {
+            amount: Number(price) || product.price.amount,
+            currency: req.body.priceCurrency || product.price.currency
+        },
+        stock,
+        attributes,
+        images
+    })
+
+    await product.save()
+
+    res.status(200).json({
+        Message: "Product variant added successfully",
+        success: true,
+        product
+    })
 }

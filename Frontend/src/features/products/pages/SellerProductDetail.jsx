@@ -7,7 +7,7 @@ const CURRENCY_SYMBOL = { INR: '₹', USD: '$', EUR: '€', GBP: '£', JYP: '¥'
 const SellerProductDetail = () => {
     const navigate = useNavigate();
     const { productId } = useParams();
-    const { handleGetProductDetails } = useProducts();
+    const { handleGetProductDetails , handleAddProductVariants } = useProducts();
 
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -99,20 +99,31 @@ const SellerProductDetail = () => {
             : null;
 
         const variantData = {
-            _id: 'local_' + Date.now(), // Generate local ID
-            price: priceObj,
-            stock: Number(newVariant.stock),
-            attributes: attributesMap,
-            images: newVariant.images // Save local preview URLs
+           priceAmount: Number(newVariant.price.amount),
+           stock: Number(newVariant.stock),
+           attributes: attributesMap,
+           images: newVariant.images
         };
+        try {
+          const updatedProduct = await handleAddProductVariants(productId, variantData);
+       
+          setProduct(updatedProduct)
 
-        // Save locally to state
-        setProduct(prev => ({
-            ...prev,
-            variants: [...(prev.variants || []), variantData]
-        }));
+          setNewVariant({
+            price: { amount: '', currency: 'INR' }, 
+            stock: 0, 
+            attributes: [{ key: '', value: '' }],
+            images: []
+          })
 
-        // Reset form
+          setShowVariantForm(false);
+          alert("Variant created successfully");
+
+        } catch (error) {
+          console.error('Error creating variant:', error);
+          alert("Failed to create variant. Please try again.");
+        }
+
         setNewVariant({ 
             price: { amount: '', currency: 'INR' }, 
             stock: 0, 

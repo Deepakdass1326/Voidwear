@@ -29,14 +29,18 @@ body { font-family: 'Inter', sans-serif; background: #f7f7f5; color: #111; overf
 .pdp-thumb.active { border-color: #111; }
 .pdp-info-col { padding-top: 20px; }
 .pdp-title { font-family: 'Oswald', sans-serif; font-size: 3.5rem; font-weight: 700; line-height: 1.1; text-transform: uppercase; margin-bottom: 16px; letter-spacing: 0.02em; }
-.pdp-price { font-size: 2rem; font-weight: 800; color: #111; margin-bottom: 32px; }
+.pdp-price { font-size: 2rem; font-weight: 800; color: #111; margin-bottom: 8px; }
+.pdp-stock { font-size: 14px; color: #009688; font-weight: 600; margin-bottom: 32px; }
 .pdp-desc { font-size: 16px; color: #555; line-height: 1.6; margin-bottom: 40px; }
-.pdp-section-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
-.size-selector { display: flex; gap: 12px; margin-bottom: 40px; }
-.size-btn { width: 50px; height: 50px; border-radius: 50%; border: 1px solid #e0e0e0; background: #fff; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+.pdp-section-title { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; color: #111; }
+.size-selector { display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; }
+.size-btn { min-width: 50px; height: 50px; padding: 0 16px; border-radius: 25px; border: 1px solid #e0e0e0; background: #fff; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; color: #333; }
 .size-btn:hover { border-color: #111; }
 .size-btn.selected { background: #111; color: #fff; border-color: #111; }
-.add-to-cart-huge { width: 100%; background: #111; color: #fff; border: none; padding: 24px; border-radius: 100px; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: background 0.2s; margin-bottom: 40px; }
+.variant-btn { display: flex; align-items: center; gap: 12px; padding: 8px 16px 8px 8px; border-radius: 12px; border: 1px solid #e0e0e0; background: #fff; cursor: pointer; transition: all 0.2s; }
+.variant-btn:hover { border-color: #999; }
+.variant-btn.selected { border-color: #111; background: #fafafa; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+.add-to-cart-huge { width: 100%; background: #111; color: #fff; border: none; padding: 24px; border-radius: 100px; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: background 0.2s; margin-bottom: 40px; margin-top: 10px; }
 .add-to-cart-huge:hover { background: #333; }
 .accordion { border-top: 1px solid #e0e0e0; margin-top: 20px; }
 .accordion-item { border-bottom: 1px solid #e0e0e0; }
@@ -66,6 +70,7 @@ body { font-family: 'Inter', sans-serif; background: #f7f7f5; color: #111; overf
   .nav { padding: 0 20px; }
   .pdp-container { padding: 40px 20px; }
   .pdp-title { font-size: 2.5rem; }
+  .ft-links { flex-direction: column; gap: 40px; }
 }
 `;
 
@@ -76,7 +81,11 @@ const ProductDetails = () => {
     const user = useSelector(state => state.auth?.user);
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [selectedSize, setSelectedSize] = useState('M');
+    
+    // Variant Selection State
+    const [selectedVariantIdx, setSelectedVariantIdx] = useState(null);
+    const [selectedOptions, setSelectedOptions] = useState({});
+    
     const [activeImgIdx, setActiveImgIdx] = useState(0);
     const [openAccordion, setOpenAccordion] = useState(null);
 
@@ -97,6 +106,7 @@ const ProductDetails = () => {
             try {
                const data = await handleGetProductDetails(productId);
                setProduct(data);
+
             } catch(e) {
                console.error(e);
             } finally {
@@ -106,28 +116,63 @@ const ProductDetails = () => {
         fetchProduct();
     }, [productId]);
 
+    // Update selected attributes whenever a variant is explicitly selected
+    useEffect(() => {
+        if (product?.variants && selectedVariantIdx !== null) {
+            const activeVar = product.variants[selectedVariantIdx];
+            if (activeVar?.attributes) {
+                const newOpts = {};
+                Object.entries(activeVar.attributes).forEach(([key, val]) => {
+                    const parts = String(val).split(',').map(s => s.trim());
+                    newOpts[key] = parts[0];
+                });
+                setSelectedOptions(newOpts);
+            }
+        } else {
+            setSelectedOptions({});
+        }
+    }, [selectedVariantIdx, product]);
+
     const DUMMY_IMAGES = [
       'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=1200',
-      'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=1200',
-      'https://images.unsplash.com/photo-1554568218-0f1715e72254?auto=format&fit=crop&q=80&w=1200'
+      'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=1200'
     ];
-
-    const getImages = (p) => {
-        let imgs = [];
-        if (p?.images && p.images.length > 0) imgs = p.images.map(img => img.url);
-        if (p?.image && p.image.length > 0) imgs = p.image.map(img => img.url);
-        if (imgs.length === 0) {
-            let hash = 0;
-            if (p?._id) hash = String(p._id).charCodeAt(p._id.length - 1);
-            imgs = [DUMMY_IMAGES[hash % DUMMY_IMAGES.length], DUMMY_IMAGES[(hash + 1) % DUMMY_IMAGES.length]];
-        }
-        return imgs;
-    };
 
     if (loading) return <div style={{padding: 100, textAlign: 'center', fontFamily: 'Inter'}}>Loading product...</div>;
     if (!product) return <div style={{padding: 100, textAlign: 'center', fontFamily: 'Inter'}}>Product not found.</div>;
 
-    const images = getImages(product);
+    // --- Variant Logic & Fallbacks ---
+    const hasVariants = product.variants && product.variants.length > 0;
+    // activeVariant is only set when user has explicitly clicked a variant
+    const activeVariant = (hasVariants && selectedVariantIdx !== null)
+        ? product.variants[selectedVariantIdx]
+        : null;
+
+    // Price: use variant price only if a variant is selected AND it has its own price
+    const displayPrice = activeVariant?.price?.amount ? activeVariant.price : product.price;
+    // Stock: show variant stock only when a variant is selected
+    const stockAvailable = activeVariant ? activeVariant.stock : null;
+    
+    // Image Fallback
+    const getImages = () => {
+        let imgs = [];
+        // Try active variant images
+        if (activeVariant?.images && activeVariant.images.length > 0) {
+            imgs = activeVariant.images.map(img => img.url);
+        }
+        // Fallback to product images
+        if (imgs.length === 0 && product?.image && product.image.length > 0) {
+            imgs = product.image.map(img => img.url);
+        }
+        if (imgs.length === 0) {
+            imgs = DUMMY_IMAGES;
+        }
+        return imgs;
+    };
+    
+    const images = getImages();
+    // Ensure active image index is valid for current set of images
+    const safeActiveImgIdx = activeImgIdx >= images.length ? 0 : activeImgIdx;
 
     return (
       <div>
@@ -135,7 +180,7 @@ const ProductDetails = () => {
 
         <nav className="nav">
           <div className="nav-left">
-            <button className="btn-pill-outline" onClick={() => navigate('/')} style={{border: 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 0'}}>
+            <button className="btn-pill-outline" onClick={() => navigate(-1)} style={{border: 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 0'}}>
               <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
               Back to Shop
             </button>
@@ -157,11 +202,11 @@ const ProductDetails = () => {
 
         <div className="pdp-container">
           <div className="pdp-image-col">
-            <img src={images[activeImgIdx]} alt={product.title} className="pdp-main-img" />
+            <img src={images[safeActiveImgIdx]} alt={product.title} className="pdp-main-img" />
             {images.length > 1 && (
               <div className="pdp-thumbnails">
                 {images.map((img, idx) => (
-                  <img key={idx} src={img} className={`pdp-thumb ${activeImgIdx === idx ? 'active' : ''}`} onClick={() => setActiveImgIdx(idx)} alt="" />
+                  <img key={idx} src={img} className={`pdp-thumb ${safeActiveImgIdx === idx ? 'active' : ''}`} onClick={() => setActiveImgIdx(idx)} alt="" />
                 ))}
               </div>
             )}
@@ -169,17 +214,110 @@ const ProductDetails = () => {
 
           <div className="pdp-info-col">
             <h1 className="pdp-title">{product.title || 'Classic Hoodie'}</h1>
-            <div className="pdp-price">{SYM[product.price?.currency]||'₹'}{product.price?.amount || '2,999'}</div>
-            <p className="pdp-desc">{product.description || 'Premium streetwear essential with a perfect modern fit. Crafted from heavy-weight cotton for ultimate comfort and durability.'}</p>
+            <div className="pdp-price">{SYM[displayPrice?.currency]||'₹'}{Number(displayPrice?.amount || 0).toLocaleString()}</div>
+            {stockAvailable !== null && <div className="pdp-stock">{stockAvailable > 0 ? `${stockAvailable} in stock` : 'Out of Stock'}</div>}
+            
+            <p className="pdp-desc">{product.description || 'Premium streetwear essential with a perfect modern fit.'}</p>
 
-            <div className="pdp-section-title">Select Size</div>
-            <div className="size-selector">
-              {['S', 'M', 'L', 'XL'].map(size => (
-                <button key={size} className={`size-btn ${selectedSize === size ? 'selected' : ''}`} onClick={() => setSelectedSize(size)}>{size}</button>
-              ))}
-            </div>
+            {/* --- Variant Selector (always show if variants exist) --- */}
+            {hasVariants && (
+                <div style={{ marginBottom: '28px' }}>
+                    <div className="pdp-section-title">Select Variant</div>
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                        {product.variants.map((v, idx) => {
+                            const thumb = v.images?.[0]?.url || product.image?.[0]?.url || DUMMY_IMAGES[0];
+                            // Build a short label from all attributes (e.g. "Green Check · S")
+                            const label = v.attributes
+                                ? Object.entries(v.attributes)
+                                    .map(([, val]) => String(val).split(',')[0].trim())
+                                    .join(' · ')
+                                : `Option ${idx + 1}`;
+                            const isSelected = selectedVariantIdx === idx;
+                            return (
+                                <button
+                                    key={idx}
+                                    onClick={() => {
+                                        setSelectedVariantIdx(idx);
+                                        setActiveImgIdx(0);
+                                    }}
+                                    className={`variant-btn ${isSelected ? 'selected' : ''}`}
+                                >
+                                    <img src={thumb} alt="" style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover' }} />
+                                    <span style={{ fontWeight: 600, fontSize: '13px', color: '#111' }}>{label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* --- Dynamic Attribute Selectors (shown once a variant is picked) --- */}
+            {activeVariant && activeVariant.attributes && (
+                <div>
+                    {Object.entries(activeVariant.attributes).map(([attrKey, attrVal]) => {
+                        const options = String(attrVal).split(',').map(s => s.trim()).filter(Boolean);
+                        const isMulti = options.length > 1;
+                        return (
+                            <div key={attrKey} style={{ marginBottom: '24px' }}>
+                                <div className="pdp-section-title">
+                                    {attrKey}
+                                    {/* Show selected value next to label */}
+                                    {isMulti && selectedOptions[attrKey] && (
+                                        <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, marginLeft: 8, color: '#666' }}>
+                                            — {selectedOptions[attrKey]}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="size-selector">
+                                    {isMulti ? (
+                                        // Comma-separated → render as clickable buttons
+                                        options.map(opt => (
+                                            <button
+                                                key={opt}
+                                                onClick={() => setSelectedOptions(prev => ({ ...prev, [attrKey]: opt }))}
+                                                className={`size-btn ${selectedOptions[attrKey] === opt ? 'selected' : ''}`}
+                                            >
+                                                {opt}
+                                            </button>
+                                        ))
+                                    ) : (
+                                        // Single value → show as a non-interactive badge (already fixed)
+                                        <span style={{
+                                            display: 'inline-flex', alignItems: 'center',
+                                            padding: '6px 16px', borderRadius: '24px',
+                                            border: '1px solid #111', background: '#111',
+                                            color: '#fff', fontSize: '13px', fontWeight: 600
+                                        }}>
+                                            {options[0]}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* Fallback size selector for products with no variants at all */}
+            {!hasVariants && (
+                <>
+                    <div className="pdp-section-title">Select Size</div>
+                    <div className="size-selector">
+                        {['S', 'M', 'L', 'XL'].map(size => (
+                            <button
+                                key={size}
+                                className={`size-btn ${selectedOptions['Size'] === size ? 'selected' : ''}`}
+                                onClick={() => setSelectedOptions(prev => ({ ...prev, Size: size }))}
+                            >
+                                {size}
+                            </button>
+                        ))}
+                    </div>
+                </>
+            )}
 
             <button className="add-to-cart-huge">Add to Cart</button>
+
 
             <div className="accordion">
               {accordionData.map((item, idx) => (
