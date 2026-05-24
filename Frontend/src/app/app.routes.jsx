@@ -8,6 +8,7 @@ import Home from "../features/products/pages/Home";
 import ProductDetails from "../features/products/pages/ProductDetails";
 import SellerProductDetail from "../features/products/pages/SellerProductDetail";
 import NotFound from "../features/products/pages/NotFound";
+import CartPage from "../features/cart/page/cart";
 
 // ── Redirect helpers (must be defined before the router uses them) ──
 function RedirectProduct() {
@@ -39,6 +40,14 @@ export const routes = createBrowserRouter([
     {
         path: "/products/:productId",
         element: <ProductDetails />
+    },
+    {
+        path: "/cart",
+        element: (
+            <Protected role="buyer">
+                <CartPage />
+            </Protected>
+        )
     },
     // Backward-compat redirect: old /product/:id → new /products/:id
     {

@@ -24,6 +24,9 @@ body { font-family: 'Inter', sans-serif; background: #f7f7f5; color: #111; overf
 .btn-pill:hover { background: #333; }
 .btn-pill-outline { background: transparent; color: #111; border: 1px solid #111; padding: 8px 20px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
 .btn-pill-outline:hover { background: #111; color: #fff; }
+.cart-icon-btn { position: relative; background: none; border: none; cursor: pointer; padding: 6px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.15s; color: #111; }
+.cart-icon-btn:hover { background: rgba(0,0,0,0.06); }
+.cart-badge { position: absolute; top: -2px; right: -2px; background: #111; color: #fff; font-size: 10px; font-weight: 700; min-width: 17px; height: 17px; border-radius: 100px; display: flex; align-items: center; justify-content: center; padding: 0 4px; line-height: 1; }
 
 /* ── Shop Section ── */
 .sec-title-wrap { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
@@ -108,6 +111,7 @@ export default function Home() {
   const { handleGetProducts } = useProducts();
   const products = useSelector(state => state.product.products);
   const user = useSelector(state => state.auth?.user);
+  const cartCount = useSelector(state => state.cart?.items?.length || 0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
@@ -163,6 +167,12 @@ export default function Home() {
           {user ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontSize: '13px', fontWeight: 600 }}>Hello, {user.fullname || 'User'}</span>
+              {user.role === 'buyer' && (
+                <button id="nav-cart-btn" className="cart-icon-btn" onClick={() => navigate('/cart')} title="View Cart">
+                  <i className="ri-shopping-bag-3-line" style={{ fontSize: 22 }}></i>
+                  {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+                </button>
+              )}
             </div>
           ) : (
             <>

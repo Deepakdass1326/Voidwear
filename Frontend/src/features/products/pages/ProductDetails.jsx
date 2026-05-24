@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router';
 import { useSelector } from 'react-redux';
 import { useProducts } from '../hooks/useProducts';
-
+import { addToCart } from '../../cart/hook/usecart';
 const SYM = { INR: '₹', USD: '$', EUR: '€', GBP: '£' };
 
 const css = `
@@ -21,6 +21,9 @@ body { font-family: 'Inter', sans-serif; background: #f7f7f5; color: #111; overf
 .btn-pill:hover { background: #333; }
 .btn-pill-outline { background: transparent; color: #111; border: 1px solid #111; padding: 8px 20px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
 .btn-pill-outline:hover { background: #111; color: #fff; }
+.cart-icon-btn { position: relative; background: none; border: none; cursor: pointer; padding: 6px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.15s; color: #111; }
+.cart-icon-btn:hover { background: rgba(0,0,0,0.06); }
+.cart-badge { position: absolute; top: -2px; right: -2px; background: #111; color: #fff; font-size: 10px; font-weight: 700; min-width: 17px; height: 17px; border-radius: 100px; display: flex; align-items: center; justify-content: center; padding: 0 4px; line-height: 1; }
 
 /* ── Breadcrumb ── */
 .breadcrumb { display: flex; align-items: center; gap: 8px; padding: 10px 32px; font-size: 11.5px; color: #999; border-bottom: 1px solid rgba(0,0,0,0.05); background: rgba(247,247,245,0.8); }
@@ -120,6 +123,7 @@ const ProductDetails = () => {
     const location = useLocation();
     const { handleGetProductDetails } = useProducts();
     const user = useSelector(state => state.auth?.user);
+    const cartCount = useSelector(state => state.cart?.items?.length || 0);
 
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -127,6 +131,8 @@ const ProductDetails = () => {
     const [selectedOptions, setSelectedOptions] = useState({});
     const [activeImgIdx, setActiveImgIdx] = useState(0);
     const [openAccordion, setOpenAccordion] = useState(null);
+
+    const { handleAddItem } = addToCart()
 
     // Smart back navigation — use history if available, otherwise go home
     const handleBack = () => {
@@ -249,7 +255,15 @@ const ProductDetails = () => {
                 </div>
                 <div className="nav-right">
                     {user ? (
-                        <span style={{ fontSize: '13px', fontWeight: 600 }}>Hello, {user.fullname || 'User'}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 600 }}>Hello, {user.fullname || 'User'}</span>
+                            {user.role === 'buyer' && (
+                                <button id="pdp-cart-btn" className="cart-icon-btn" onClick={() => navigate('/cart')} title="View Cart">
+                                    <i className="ri-shopping-bag-3-line" style={{ fontSize: 22 }}></i>
+                                    {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+                                </button>
+                            )}
+                        </div>
                     ) : (
                         <>
                             <button className="btn-pill-outline" onClick={() => navigate('/login')}>Sign In</button>
@@ -401,7 +415,21 @@ const ProductDetails = () => {
                         </>
                     )}
 
-                    <button className="add-to-cart-huge">Add to Cart</button>
+                    <button onClick={() => {
+                        if (!activeVariant) {
+                            alert("Please select a variant first");
+                            return;
+                        }
+                        handleAddItem({
+                            productId: product._id,
+                            variantId: activeVariant._id,
+                        })
+                    }}
+                    
+                    
+                    
+                    
+                    className="add-to-cart-huge">Add to Cart</button>
 
                     {/* Accordion */}
                     <div className="accordion">
