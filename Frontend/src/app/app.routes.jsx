@@ -50,7 +50,7 @@ export const routes = createBrowserRouter([
     {
         path: "/seller",
         children: [
-            // /seller → /seller/products
+            // /seller → /seller/products (primary seller landing page)
             {
                 index: true,
                 element: <Navigate to="/seller/products" replace />

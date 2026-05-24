@@ -41,16 +41,24 @@ export default function GetSellerProducts() {
         <span className="font-['Montserrat'] font-extrabold text-[1.1rem] tracking-[0.18em] uppercase text-gray-900 select-none">
           Voidwear
         </span>
-        <button
-          type="button"
-          onClick={() => navigate('/seller/products/new')}
-          className="flex items-center gap-1.5 text-xs font-semibold text-white bg-gray-900 hover:bg-gray-700 active:scale-[0.98] transition-all duration-150 px-4 py-2 rounded-lg border-none cursor-pointer"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-          </svg>
-          New Product
-        </button>
+        <div className="flex items-center gap-6">
+          <span
+            onClick={() => navigate('/seller/dashboard')}
+            className="text-xs font-medium text-gray-500 hover:text-gray-900 cursor-pointer transition-colors"
+          >
+            Dashboard
+          </span>
+          <button
+            type="button"
+            onClick={() => navigate('/seller/products/new')}
+            className="flex items-center gap-1.5 text-xs font-semibold text-white bg-gray-900 hover:bg-gray-700 active:scale-[0.98] transition-all duration-150 px-4 py-2 rounded-lg border-none cursor-pointer"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            New Product
+          </button>
+        </div>
       </nav>
 
       {/* ── Main ── */}
