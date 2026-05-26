@@ -47,8 +47,6 @@ body { font-family: 'Inter', sans-serif; background: #f7f7f5; color: #111; overf
 .shop-card-desc { font-size: 11.5px; color: #777; line-height: 1.45; }
 .shop-card-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 6px; }
 .shop-card-price { font-size: 15px; font-weight: 800; color: #111; }
-.add-btn { background: #111; color: #fff; border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
-.add-btn:hover { background: #333; }
 
 /* ── Footer ── */
 .footer { background: #f7f7f5; padding: 48px 32px 28px; color: #111; display: flex; flex-direction: column; overflow: hidden; margin-top: 40px; border-top: 1px solid #eaeaea; }
@@ -95,7 +93,6 @@ body { font-family: 'Inter', sans-serif; background: #f7f7f5; color: #111; overf
   .shop-card-info { padding: 10px 11px; gap: 6px; }
   .shop-card-title { font-size: 12px; }
   .shop-card-price { font-size: 13px; }
-  .add-btn { width: 28px; height: 28px; }
 }
 
 /* ── Small Mobile ── */
@@ -128,25 +125,6 @@ export default function Home() {
       p.description?.toLowerCase().includes(search.toLowerCase())
     );
   }, [products, search]);
-
-  const DUMMY_IMAGES = [
-    'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1554568218-0f1715e72254?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1578587018452-892bacefd3f2?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1529720317453-c8da503f2051?auto=format&fit=crop&q=80&w=800',
-    'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&q=80&w=800',
-  ];
-
-  const getImg = (p, i = 0) => {
-    if (p?.image?.[0]?.url) return p.image[0].url;
-    if (p?.images?.[0]?.url) return p.images[0].url;
-    let hash = i;
-    if (p?._id) hash = String(p._id).charCodeAt(p._id.length - 1);
-    return DUMMY_IMAGES[hash % DUMMY_IMAGES.length];
-  };
 
   return (
     <div>
@@ -196,20 +174,15 @@ export default function Home() {
             {filtered.map((p, i) => (
               <div key={p._id || i} className="shop-card" onClick={() => p._id && navigate(`/products/${p._id}`, { state: { from: '/' } })}>
                 <div className="shop-card-img">
-                  <img src={getImg(p, i)} alt="" />
+                  <img src={p.image?.[0]?.url} alt={p.title} />
                 </div>
                 <div className="shop-card-info">
                   <div>
-                    <div className="shop-card-title">{p.title || 'Classic Hoodie'}</div>
-                    <div className="shop-card-desc">{p.description?.substring(0, 50) || 'Premium streetwear essential.'}...</div>
+                    <div className="shop-card-title">{p.title}</div>
+                    <div className="shop-card-desc">{p.description?.substring(0, 50)}...</div>
                   </div>
                   <div className="shop-card-bottom">
-                    <div className="shop-card-price">{SYM[p.price?.currency] || '₹'}{p.price?.amount || '2,999'}</div>
-                    <button className="add-btn" onClick={e => e.stopPropagation()}>
-                      <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                      </svg>
-                    </button>
+                    <div className="shop-card-price">{SYM[p.price?.currency] || '₹'}{p.price?.amount}</div>
                   </div>
                 </div>
               </div>
