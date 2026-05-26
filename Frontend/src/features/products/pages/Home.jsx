@@ -1,116 +1,125 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router';
 import { useProducts } from '../hooks/useProducts';
+import { useCart } from '../../cart/hook/usecart';
+import { setUser } from '../../auth/state/auth.slice';
+import { logoutUser } from '../../auth/service/auth.api';
 
 const SYM = { INR: '₹', USD: '$', EUR: '€', GBP: '£' };
 
 const css = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Oswald:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', sans-serif; background: #f7f7f5; color: #111; overflow-x: hidden; }
+body { font-family: 'Inter', sans-serif; background: #ffffff; color: #000000; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
 
 /* ── Navbar ── */
-.nav { position: sticky; top: 0; z-index: 100; background: rgba(247,247,245,0.95); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; height: 60px; border-bottom: 1px solid rgba(0,0,0,0.07); }
-.nav-left { display: flex; align-items: center; gap: 16px; flex: 1; }
+.nav { position: fixed; top: 0; width: 100%; z-index: 100; background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 72px; border-bottom: 1px solid rgba(0,0,0,0.04); transition: all 0.3s ease; }
+.nav-left { flex: 1; display: flex; align-items: center; gap: 32px; }
 .nav-center { flex: 1; display: flex; justify-content: center; }
-.nav-right { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: flex-end; }
-.nav-logo { font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 1.4rem; letter-spacing: 0.1em; color: #111; cursor: pointer; text-transform: uppercase; }
-.search-pill { display: flex; align-items: center; background: #fff; border-radius: 100px; padding: 7px 16px; border: 1px solid #e0e0e0; transition: all 0.2s; }
-.search-pill:focus-within { border-color: #111; }
-.search-pill input { border: none; outline: none; background: transparent; font-family: 'Inter', sans-serif; font-size: 13px; margin-left: 8px; width: 150px; }
-.btn-pill { background: #111; color: #fff; border: none; padding: 8px 20px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-.btn-pill:hover { background: #333; }
-.btn-pill-outline { background: transparent; color: #111; border: 1px solid #111; padding: 8px 20px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-.btn-pill-outline:hover { background: #111; color: #fff; }
-.cart-icon-btn { position: relative; background: none; border: none; cursor: pointer; padding: 6px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.15s; color: #111; }
-.cart-icon-btn:hover { background: rgba(0,0,0,0.06); }
-.cart-badge { position: absolute; top: -2px; right: -2px; background: #111; color: #fff; font-size: 10px; font-weight: 700; min-width: 17px; height: 17px; border-radius: 100px; display: flex; align-items: center; justify-content: center; padding: 0 4px; line-height: 1; }
+.nav-right { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 24px; }
+.nav-logo { font-weight: 700; font-size: 1.3rem; letter-spacing: -0.05em; color: #000; cursor: pointer; text-transform: lowercase; }
+.nav-link { font-size: 13px; font-weight: 500; color: #555; text-decoration: none; cursor: pointer; transition: color 0.2s; text-transform: uppercase; letter-spacing: 0.05em; background: none; border: none; font-family: 'Inter', sans-serif; }
+.nav-link:hover { color: #000; }
+.nav-link-logout { font-size: 12px; font-weight: 500; color: #999; text-decoration: none; cursor: pointer; transition: color 0.2s; text-transform: uppercase; letter-spacing: 0.05em; background: none; border: none; font-family: 'Inter', sans-serif; }
+.nav-link-logout:hover { color: #000; }
+.nav-icon { background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #000; position: relative; transition: opacity 0.2s; }
+.nav-icon:hover { opacity: 0.7; }
+.cart-badge { position: absolute; top: -5px; right: -8px; background: #000; color: #fff; font-size: 10px; font-weight: 600; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
-/* ── Shop Section ── */
-.sec-title-wrap { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.sec-title { font-family: 'Oswald', sans-serif; font-size: 1.9rem; font-weight: 700; line-height: 1; text-transform: uppercase; letter-spacing: 0.02em; }
-.shop-section { padding: 28px 32px 48px; }
+/* ── Hero Section ── */
+.hero { padding: 180px 40px 100px; text-align: center; display: flex; flex-direction: column; align-items: center; }
+.hero-title { font-size: clamp(2.5rem, 5vw, 4.5rem); font-weight: 500; letter-spacing: -0.04em; line-height: 1.1; margin-bottom: 24px; color: #111; }
+.hero-subtitle { font-size: 1.125rem; color: #666; font-weight: 400; max-width: 540px; line-height: 1.6; }
+
+/* ── Filters & Search ── */
+.controls-bar { display: flex; justify-content: space-between; align-items: center; padding: 0 40px 48px; }
+.search-wrapper { display: flex; align-items: center; border-bottom: 1px solid #e0e0e0; padding-bottom: 8px; width: 280px; transition: border-color 0.3s; }
+.search-wrapper:focus-within { border-color: #000; }
+.search-wrapper input { border: none; outline: none; background: transparent; font-family: 'Inter', sans-serif; font-size: 14px; width: 100%; margin-left: 12px; color: #000; }
+.search-wrapper input::placeholder { color: #999; }
+.products-count { font-size: 13px; color: #666; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
 
 /* ── Product Grid ── */
-.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 18px; }
+.shop-section { padding: 0 40px 120px; min-height: 40vh; }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 48px 32px; }
 
 /* ── Product Card ── */
-.shop-card { background: #fff; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.04); border: 1px solid #eaeaea; display: flex; flex-direction: column; cursor: pointer; transition: transform 0.25s ease, box-shadow 0.25s ease; }
-.shop-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.09); }
-.shop-card-img { aspect-ratio: 3/4; position: relative; background: #f0f0f0; overflow: hidden; }
-.shop-card-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
-.shop-card:hover .shop-card-img img { transform: scale(1.05); }
-.shop-card-info { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
-.shop-card-title { font-size: 13px; font-weight: 700; color: #111; line-height: 1.35; }
-.shop-card-desc { font-size: 11.5px; color: #777; line-height: 1.45; }
-.shop-card-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 6px; }
-.shop-card-price { font-size: 15px; font-weight: 800; color: #111; }
+.shop-card { display: flex; flex-direction: column; cursor: pointer; text-decoration: none; }
+.shop-card-img-wrapper { aspect-ratio: 3/4; overflow: hidden; background: #f4f4f4; margin-bottom: 20px; position: relative; }
+.shop-card-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1); }
+.shop-card:hover .shop-card-img { transform: scale(1.05); }
+.shop-card-overlay { position: absolute; bottom: 0; left: 0; right: 0; padding: 12px; opacity: 0; transition: opacity 0.3s ease; }
+.shop-card-img-wrapper:hover .shop-card-overlay { opacity: 1; }
+.add-to-cart-btn { width: 100%; background: #000; color: #fff; border: none; padding: 12px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: background 0.2s; }
+.add-to-cart-btn:hover { background: #333; }
+.shop-card-info { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.shop-card-details { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.shop-card-title { font-size: 15px; font-weight: 500; color: #111; letter-spacing: -0.01em; }
+.shop-card-desc { font-size: 13px; color: #777; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.shop-card-price { font-size: 14px; font-weight: 600; color: #111; white-space: nowrap; }
 
 /* ── Footer ── */
-.footer { background: #f7f7f5; padding: 48px 32px 28px; color: #111; display: flex; flex-direction: column; overflow: hidden; margin-top: 40px; border-top: 1px solid #eaeaea; }
-.ft-top { display: flex; justify-content: space-between; margin-bottom: 36px; gap: 32px; }
-.ft-links { display: flex; gap: 56px; }
-.ft-col h4 { font-size: 12px; font-weight: 800; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.06em; color: #111; }
-.ft-col ul { list-style: none; }
-.ft-col li { font-size: 13px; color: #666; margin-bottom: 10px; cursor: pointer; transition: color 0.2s; }
-.ft-col li:hover { color: #111; }
-.ft-newsletter { flex-shrink: 0; }
-.ft-giant { font-family: 'Oswald', sans-serif; font-size: 17vw; font-weight: 700; color: transparent; -webkit-text-stroke: 2px #e8e8e8; text-align: center; line-height: 0.8; margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.01em; user-select: none; }
-.ft-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 18px; border-top: 1px solid #eaeaea; font-size: 12px; color: #999; font-weight: 500; }
-.ft-bottom-links { display: flex; gap: 18px; }
-.ft-bottom-links span { cursor: pointer; transition: color 0.2s; }
-.ft-bottom-links span:hover { color: #111; }
+.footer { border-top: 1px solid #eaeaea; padding: 100px 40px 40px; display: flex; flex-direction: column; gap: 80px; background: #fafafa; }
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr; gap: 60px; }
+.footer-col h4 { font-size: 12px; font-weight: 600; color: #111; margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.05em; }
+.footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+.footer-col li { font-size: 14px; color: #666; cursor: pointer; transition: color 0.2s; }
+.footer-col li:hover { color: #111; }
+.newsletter-input { width: 100%; border: none; border-bottom: 1px solid #ccc; padding: 12px 0; outline: none; font-size: 14px; font-family: 'Inter', sans-serif; background: transparent; transition: border-color 0.3s; color: #111; }
+.newsletter-input:focus { border-color: #111; }
+.footer-bottom { display: flex; justify-content: space-between; align-items: center; color: #888; font-size: 13px; border-top: 1px solid #eaeaea; padding-top: 32px; }
+.footer-logo { font-size: 1.5rem; font-weight: 700; color: #111; letter-spacing: -0.05em; text-transform: lowercase; }
+.social-links { display: flex; gap: 24px; }
+.social-links span { cursor: pointer; transition: color 0.2s; }
+.social-links span:hover { color: #111; }
 
-/* ── Large Desktop (5+ columns) ── */
-@media (min-width: 1400px) {
-  .shop-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
-}
-
-/* ── Tablet ── */
+/* ── Responsive ── */
 @media (max-width: 1024px) {
-  .shop-section { padding: 24px 24px 40px; }
-  .nav { padding: 0 24px; }
-  .shop-grid { grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 14px; }
-  .ft-links { gap: 36px; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 60px 40px; }
 }
-
-/* ── Mobile ── */
 @media (max-width: 768px) {
-  .nav { padding: 0 16px; height: 54px; }
-  .nav-logo { font-size: 1.2rem; }
-  .shop-section { padding: 18px 14px 32px; }
-  .sec-title { font-size: 1.4rem; }
-  .search-pill { padding: 6px 12px; }
-  .search-pill input { width: 80px; }
-  .btn-pill, .btn-pill-outline { padding: 7px 13px; font-size: 11px; }
-  .ft-top { flex-direction: column; gap: 28px; }
-  .ft-links { flex-wrap: wrap; gap: 24px; }
-  .footer { padding: 32px 16px 20px; margin-top: 28px; }
-  .ft-bottom { flex-direction: column; gap: 10px; align-items: flex-start; }
-  .shop-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-  .shop-card-info { padding: 10px 11px; gap: 6px; }
-  .shop-card-title { font-size: 12px; }
-  .shop-card-price { font-size: 13px; }
-}
-
-/* ── Small Mobile ── */
-@media (max-width: 400px) {
-  .nav-right { gap: 6px; }
-  .btn-pill, .btn-pill-outline { padding: 6px 11px; }
-  .shop-grid { gap: 8px; }
+  .nav { padding: 0 24px; height: 64px; }
+  .nav-left { display: none; }
+  .nav-center { justify-content: flex-start; }
+  .hero { padding: 140px 24px 80px; text-align: left; align-items: flex-start; }
+  .hero-title { font-size: 2.5rem; }
+  .controls-bar { flex-direction: column; align-items: stretch; gap: 24px; padding: 0 24px 40px; }
+  .search-wrapper { width: 100%; }
+  .shop-section { padding: 0 24px 80px; }
+  .shop-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 32px 16px; }
+  .footer { padding: 80px 24px 32px; gap: 60px; }
+  .footer-grid { grid-template-columns: 1fr; gap: 48px; }
+  .footer-bottom { flex-direction: column; gap: 24px; align-items: flex-start; }
 }
 `;
 
 export default function Home() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { handleGetProducts } = useProducts();
+  const { handleAddItem } = useCart();
   const products = useSelector(state => state.product.products);
   const user = useSelector(state => state.auth?.user);
   const cartCount = useSelector(state => state.cart?.items?.length || 0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+
+  const handleLogout = async () => {
+    await logoutUser();
+    dispatch(setUser(null));
+    navigate('/');
+  };
+
+  const handleAddToCart = (e, product) => {
+    e.stopPropagation();
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    navigate(`/products/${product._id}`, { state: { from: '/' } });
+  };
 
   useEffect(() => {
     (async () => {
@@ -129,87 +138,126 @@ export default function Home() {
   return (
     <div>
       <style>{css}</style>
+      
       <nav className="nav">
         <div className="nav-left">
-          <div className="search-pill">
-            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="#888" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-            </svg>
-            <input type="text" placeholder="Search products..." value={search} onChange={e => setSearch(e.target.value)} />
-          </div>
+           <span className="nav-link" onClick={() => navigate('/')}>Collections</span>
         </div>
         <div className="nav-center">
-          <span className="nav-logo" onClick={() => navigate('/')}>VOIDWEAR</span>
+          <span className="nav-logo" onClick={() => navigate('/')}>voidwear.</span>
         </div>
         <div className="nav-right">
           {user ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 600 }}>Hello, {user.fullname || 'User'}</span>
+            <>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>
+                {user.fullname?.split(' ')[0]}
+              </span>
               {user.role === 'buyer' && (
-                <button id="nav-cart-btn" className="cart-icon-btn" onClick={() => navigate('/cart')} title="View Cart">
-                  <i className="ri-shopping-bag-3-line" style={{ fontSize: 22 }}></i>
+                <button className="nav-icon" onClick={() => navigate('/cart')} title="View Cart">
+                  <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                  </svg>
                   {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
                 </button>
               )}
-            </div>
+              <button className="nav-link-logout" onClick={handleLogout}>Logout</button>
+            </>
           ) : (
             <>
-              <button className="btn-pill-outline" onClick={() => navigate('/login')}>Sign In</button>
-              <button className="btn-pill" onClick={() => navigate('/register')}>Get Started</button>
+              <span className="nav-link" onClick={() => navigate('/login')}>Login</span>
+              <span className="nav-link" onClick={() => navigate('/register')}>Register</span>
             </>
           )}
         </div>
       </nav>
 
-      <section className="shop-section">
-        <div className="sec-title-wrap">
-          <h2 className="sec-title">{search ? 'SEARCH RESULTS' : 'ALL PRODUCTS'}</h2>
-        </div>
-        {loading ? (
-          <p style={{ fontSize: '14px', color: '#888' }}>Loading products...</p>
-        ) : filtered.length === 0 ? (
-          <p style={{ fontSize: '14px', color: '#888' }}>No products found.</p>
-        ) : (
-          <div className="shop-grid">
-            {filtered.map((p, i) => (
-              <div key={p._id || i} className="shop-card" onClick={() => p._id && navigate(`/products/${p._id}`, { state: { from: '/' } })}>
-                <div className="shop-card-img">
-                  <img src={p.image?.[0]?.url} alt={p.title} />
-                </div>
-                <div className="shop-card-info">
-                  <div>
-                    <div className="shop-card-title">{p.title}</div>
-                    <div className="shop-card-desc">{p.description?.substring(0, 50)}...</div>
-                  </div>
-                  <div className="shop-card-bottom">
-                    <div className="shop-card-price">{SYM[p.price?.currency] || '₹'}{p.price?.amount}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
+      <main>
+        <section className="hero">
+          <h1 className="hero-title">Elevated Essentials.</h1>
+          <p className="hero-subtitle">Discover the new standard in modern streetwear. Designed for everyday comfort and uncompromising style.</p>
+        </section>
+
+        <div className="controls-bar">
+          <div className="search-wrapper">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#888" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+            </svg>
+            <input type="text" placeholder="Search collection..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-        )}
-      </section>
+          <div className="products-count">
+             {filtered.length} {filtered.length === 1 ? 'Product' : 'Products'}
+          </div>
+        </div>
+
+        <section className="shop-section">
+          {loading ? (
+            <p style={{ fontSize: '14px', color: '#888', textAlign: 'center', padding: '40px 0' }}>Loading collection...</p>
+          ) : filtered.length === 0 ? (
+            <p style={{ fontSize: '14px', color: '#888', textAlign: 'center', padding: '40px 0' }}>No products match your search.</p>
+          ) : (
+            <div className="shop-grid">
+              {filtered.map((p, i) => (
+                <div key={p._id || i} className="shop-card" onClick={() => p._id && navigate(`/products/${p._id}`, { state: { from: '/' } })}>
+                  <div className="shop-card-img-wrapper">
+                    <img className="shop-card-img" src={p.image?.[0]?.url} alt={p.title} />
+                    <div className="shop-card-overlay">
+                      <button className="add-to-cart-btn" onClick={(e) => handleAddToCart(e, p)}>
+                        {user ? 'Add to Cart' : 'Login to Buy'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="shop-card-info">
+                    <div className="shop-card-details">
+                      <span className="shop-card-title">{p.title}</span>
+                      <span className="shop-card-desc">{p.description}</span>
+                    </div>
+                    <span className="shop-card-price">{SYM[p.price?.currency] || '₹'}{p.price?.amount}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
 
       <footer className="footer">
-        <div className="ft-top">
-          <div className="ft-links">
-            <div className="ft-col"><h4>Shop</h4><ul><li>All Products</li><li>New Arrivals</li><li>Best Sellers</li></ul></div>
-            <div className="ft-col"><h4>Company</h4><ul><li>About Us</li><li>Careers</li><li>Press</li></ul></div>
-            <div className="ft-col"><h4>Support</h4><ul><li>Contact</li><li>Returns</li><li>FAQ</li></ul></div>
+        <div className="footer-grid">
+          <div className="footer-col">
+            <div className="footer-logo" style={{marginBottom: 16}}>voidwear.</div>
+            <p style={{color: '#666', fontSize: 14, lineHeight: 1.6, maxWidth: 250}}>
+              Redefining contemporary streetwear with minimal design and premium quality.
+            </p>
           </div>
-          <div className="ft-newsletter">
-            <div style={{ fontSize: 13, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>Stay Updated</div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <input type="email" placeholder="Email address" style={{ background: '#fff', border: '1px solid #ddd', padding: '10px 14px', borderRadius: 8, color: '#111', outline: 'none', fontSize: 13 }} />
-              <button style={{ background: '#111', color: '#fff', border: 'none', padding: '0 18px', borderRadius: 8, fontWeight: 700, cursor: 'pointer', fontSize: 13 }}>Join</button>
-            </div>
+          <div className="footer-col">
+            <h4>Shop</h4>
+            <ul>
+              <li>New Arrivals</li>
+              <li>T-Shirts</li>
+              <li>Hoodies</li>
+              <li>Accessories</li>
+            </ul>
+          </div>
+          <div className="footer-col">
+            <h4>Information</h4>
+            <ul>
+              <li>About Us</li>
+              <li>Shipping & Returns</li>
+              <li>Privacy Policy</li>
+              <li>Terms of Service</li>
+            </ul>
+          </div>
+          <div className="footer-col">
+            <h4>Newsletter</h4>
+            <p style={{color: '#666', fontSize: 14, marginBottom: 16}}>Subscribe to receive updates, access to exclusive deals, and more.</p>
+            <input type="email" placeholder="Enter your email" className="newsletter-input" />
           </div>
         </div>
-        <div className="ft-giant">VOIDWEAR</div>
-        <div className="ft-bottom">
+        <div className="footer-bottom">
           <span>© {new Date().getFullYear()} Voidwear. All rights reserved.</span>
-          <div className="ft-bottom-links"><span>Terms of Service</span><span>Privacy Policy</span></div>
+          <div className="social-links">
+            <span>Instagram</span>
+            <span>Twitter</span>
+          </div>
         </div>
       </footer>
     </div>

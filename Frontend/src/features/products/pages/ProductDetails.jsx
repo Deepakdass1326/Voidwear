@@ -1,119 +1,122 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useProducts } from '../hooks/useProducts';
 import { addToCart } from '../../cart/hook/usecart';
+import { setUser } from '../../auth/state/auth.slice';
+import { logoutUser } from '../../auth/service/auth.api';
+
 const SYM = { INR: '₹', USD: '$', EUR: '€', GBP: '£' };
 
 const css = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Oswald:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', sans-serif; background: #f7f7f5; color: #111; overflow-x: hidden; }
+body { font-family: 'Inter', sans-serif; background: #ffffff; color: #000000; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
 
 /* ── Navbar ── */
-.nav { position: sticky; top: 0; z-index: 100; background: rgba(247,247,245,0.95); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: space-between; padding: 0 32px; height: 60px; border-bottom: 1px solid rgba(0,0,0,0.07); }
-.nav-left { display: flex; align-items: center; gap: 16px; flex: 1; }
+.nav { position: fixed; top: 0; width: 100%; z-index: 100; background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: space-between; padding: 0 40px; height: 72px; border-bottom: 1px solid rgba(0,0,0,0.04); transition: all 0.3s ease; }
+.nav-left { flex: 1; display: flex; align-items: center; gap: 32px; }
 .nav-center { flex: 1; display: flex; justify-content: center; }
-.nav-right { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: flex-end; }
-.nav-logo { font-family: 'Oswald', sans-serif; font-weight: 700; font-size: 1.4rem; letter-spacing: 0.1em; color: #111; cursor: pointer; text-transform: uppercase; }
-.btn-pill { background: #111; color: #fff; border: none; padding: 8px 20px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-.btn-pill:hover { background: #333; }
-.btn-pill-outline { background: transparent; color: #111; border: 1px solid #111; padding: 8px 20px; border-radius: 100px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
-.btn-pill-outline:hover { background: #111; color: #fff; }
-.cart-icon-btn { position: relative; background: none; border: none; cursor: pointer; padding: 6px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.15s; color: #111; }
-.cart-icon-btn:hover { background: rgba(0,0,0,0.06); }
-.cart-badge { position: absolute; top: -2px; right: -2px; background: #111; color: #fff; font-size: 10px; font-weight: 700; min-width: 17px; height: 17px; border-radius: 100px; display: flex; align-items: center; justify-content: center; padding: 0 4px; line-height: 1; }
+.nav-right { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 24px; }
+.nav-logo { font-weight: 700; font-size: 1.3rem; letter-spacing: -0.05em; color: #000; cursor: pointer; text-transform: lowercase; }
+.nav-link { font-size: 13px; font-weight: 500; color: #555; text-decoration: none; cursor: pointer; transition: color 0.2s; text-transform: uppercase; letter-spacing: 0.05em; background: none; border: none; font-family: 'Inter', sans-serif; }
+.nav-link:hover { color: #000; }
+.nav-link-logout { font-size: 12px; font-weight: 500; color: #999; text-decoration: none; cursor: pointer; transition: color 0.2s; text-transform: uppercase; letter-spacing: 0.05em; background: none; border: none; font-family: 'Inter', sans-serif; }
+.nav-link-logout:hover { color: #000; }
+.nav-icon { background: none; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #000; position: relative; transition: opacity 0.2s; }
+.nav-icon:hover { opacity: 0.7; }
+.cart-badge { position: absolute; top: -5px; right: -8px; background: #000; color: #fff; font-size: 10px; font-weight: 600; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
 /* ── Breadcrumb ── */
-.breadcrumb { display: flex; align-items: center; gap: 8px; padding: 10px 32px; font-size: 11.5px; color: #999; border-bottom: 1px solid rgba(0,0,0,0.05); background: rgba(247,247,245,0.8); }
-.breadcrumb-link { cursor: pointer; color: #888; transition: color 0.2s; }
-.breadcrumb-link:hover { color: #111; }
-.breadcrumb-sep { color: #ccc; }
-.breadcrumb-current { color: #111; font-weight: 500; }
+.breadcrumb { margin-top: 72px; padding: 24px 40px; font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+.breadcrumb-link { cursor: pointer; color: #555; transition: color 0.2s; }
+.breadcrumb-link:hover { color: #000; }
+.breadcrumb-sep { margin: 0 8px; color: #ccc; }
+.breadcrumb-current { color: #000; font-weight: 500; }
 
 /* ── PDP Layout ── */
-.pdp-container { max-width: 1060px; margin: 0 auto; padding: 28px 32px 48px; display: grid; grid-template-columns: 4.2fr 5.8fr; gap: 48px; align-items: start; }
-.pdp-image-col { position: sticky; top: 80px; display: flex; flex-direction: column; gap: 12px; }
-.pdp-main-img { width: 100%; aspect-ratio: 3/4; object-fit: cover; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); }
-.pdp-thumbnails { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
-.pdp-thumb { width: 60px; aspect-ratio: 3/4; object-fit: cover; border-radius: 6px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; flex-shrink: 0; opacity: 0.6; }
-.pdp-thumb:hover { opacity: 0.9; }
-.pdp-thumb.active { border-color: #111; opacity: 1; }
-.pdp-info-col { padding-top: 4px; }
-.pdp-title { font-family: 'Oswald', sans-serif; font-size: 1.8rem; font-weight: 700; line-height: 1.15; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.02em; }
-.pdp-price { font-size: 1.25rem; font-weight: 700; color: #111; margin-bottom: 6px; }
-.pdp-stock { font-size: 12px; color: #009688; font-weight: 600; margin-bottom: 16px; }
-.pdp-desc { font-size: 13.5px; color: #555; line-height: 1.6; margin-bottom: 24px; }
-.pdp-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; color: #111; }
-.size-selector { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-.size-btn { min-width: 40px; height: 40px; padding: 0 12px; border-radius: 20px; border: 1px solid #e0e0e0; background: #fff; font-weight: 600; font-size: 12px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; color: #333; }
+.pdp-container { max-width: 1400px; margin: 0 auto; padding: 0 40px 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
+.pdp-image-col { position: sticky; top: 100px; display: flex; gap: 20px; height: calc(100vh - 120px); align-items: flex-start; }
+.pdp-thumbnails { display: flex; flex-direction: column; gap: 16px; width: 80px; max-height: 100%; overflow-y: auto; padding-right: 4px; }
+.pdp-thumbnails::-webkit-scrollbar { width: 4px; }
+.pdp-thumbnails::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+.pdp-thumb { width: 100%; aspect-ratio: 3/4; object-fit: cover; cursor: pointer; transition: opacity 0.2s; opacity: 0.5; background: #f4f4f4; flex-shrink: 0; }
+.pdp-thumb:hover { opacity: 0.8; }
+.pdp-thumb.active { opacity: 1; }
+.pdp-main-img-wrap { height: 100%; aspect-ratio: 3/4; background: #f4f4f4; overflow: hidden; display: flex; justify-content: center; }
+.pdp-main-img { width: 100%; height: 100%; object-fit: cover; }
+
+.pdp-info-col { padding-top: 20px; max-width: 500px; }
+.pdp-title { font-size: 2rem; font-weight: 500; line-height: 1.2; margin-bottom: 12px; color: #111; letter-spacing: -0.02em; }
+.pdp-price { font-size: 1.25rem; font-weight: 500; color: #111; margin-bottom: 32px; }
+.pdp-stock { font-size: 12px; color: #111; margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.05em; }
+.pdp-desc { font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 40px; }
+
+/* ── Variants & Selectors ── */
+.pdp-section-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; color: #111; display: flex; justify-content: space-between; align-items: center; }
+
+/* All Variants Row (Color selection usually) */
+.all-variants-scroll { display: flex; gap: 16px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 32px; }
+.av-item { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; flex-shrink: 0; }
+.av-img { width: 60px; height: 80px; object-fit: cover; transition: all 0.2s; opacity: 0.6; background: #f4f4f4; border-bottom: 2px solid transparent; padding-bottom: 4px; }
+.av-img.active { opacity: 1; border-color: #111; }
+.av-img:hover { opacity: 1; }
+.av-label { font-size: 11px; font-weight: 500; color: #555; text-align: center; text-transform: uppercase; letter-spacing: 0.05em; max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.size-selector { display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; }
+.size-btn { flex: 1; min-width: 60px; height: 48px; border: 1px solid #e0e0e0; background: #fff; font-family: 'Inter', sans-serif; font-weight: 500; font-size: 13px; cursor: pointer; transition: all 0.2s; color: #111; display: flex; align-items: center; justify-content: center; }
 .size-btn:hover { border-color: #111; }
 .size-btn.selected { background: #111; color: #fff; border-color: #111; }
-.variant-btn { display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 8px; border: 1px solid #e0e0e0; background: #fff; cursor: pointer; transition: all 0.2s; }
-.variant-btn:hover { border-color: #999; }
-.variant-btn.selected { border-color: #111; background: #fafafa; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
-.add-to-cart-huge { width: 100%; background: #111; color: #fff; border: none; padding: 15px; border-radius: 100px; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: background 0.2s; margin-bottom: 24px; margin-top: 4px; }
-.add-to-cart-huge:hover { background: #333; }
 
-/* ── All Variants Panel ── */
-.all-variants-panel { border: 1px solid #eaeaea; border-radius: 10px; padding: 12px 14px; margin-bottom: 24px; background: #fafafa; }
-.all-variants-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
-.av-item { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; flex-shrink: 0; }
-.av-img { width: 50px; height: 64px; object-fit: cover; border-radius: 6px; border: 2px solid transparent; transition: all 0.2s; opacity: 0.7; }
-.av-img.active { border-color: #111; opacity: 1; }
-.av-img:hover { border-color: #999; opacity: 1; }
-.av-label { font-size: 10px; font-weight: 500; color: #666; text-align: center; max-width: 50px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.add-to-cart-huge { width: 100%; background: #111; color: #fff; border: none; padding: 18px; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; cursor: pointer; transition: background 0.3s; margin-bottom: 40px; }
+.add-to-cart-huge:hover { background: #000; opacity: 0.8; }
+.add-to-cart-huge:disabled { background: #ccc; cursor: not-allowed; color: #fff; opacity: 1; }
 
 /* ── Accordion ── */
-.accordion { border-top: 1px solid #eaeaea; margin-top: 8px; }
-.accordion-item { border-bottom: 1px solid #eaeaea; }
-.accordion-header { padding: 15px 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; font-size: 13px; transition: color 0.2s; }
+.accordion { border-top: 1px solid #e0e0e0; }
+.accordion-item { border-bottom: 1px solid #e0e0e0; }
+.accordion-header { padding: 20px 0; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 500; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: #111; transition: color 0.2s; }
 .accordion-header:hover { color: #555; }
-.accordion-content { overflow: hidden; max-height: 0; transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease; opacity: 0; font-size: 12.5px; color: #666; line-height: 1.6; }
-.accordion-content.open { max-height: 220px; padding-bottom: 15px; opacity: 1; }
+.accordion-content { overflow: hidden; max-height: 0; transition: max-height 0.4s ease, padding 0.4s ease, opacity 0.4s ease; opacity: 0; font-size: 13px; color: #666; line-height: 1.6; }
+.accordion-content.open { max-height: 300px; padding-bottom: 20px; opacity: 1; }
 .accordion-icon { transition: transform 0.3s ease; }
 .accordion-icon.open { transform: rotate(180deg); }
 
 /* ── Footer ── */
-.footer { background: #f7f7f5; padding: 40px 32px 20px; color: #111; display: flex; flex-direction: column; overflow: hidden; margin-top: 40px; border-top: 1px solid #eaeaea; }
-.ft-top { display: flex; justify-content: space-between; margin-bottom: 32px; gap: 32px; }
-.ft-links { display: flex; gap: 48px; }
-.ft-col h4 { font-size: 11.5px; font-weight: 800; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #111; }
-.ft-col ul { list-style: none; }
-.ft-col li { font-size: 12.5px; color: #666; margin-bottom: 8px; cursor: pointer; transition: color 0.2s; }
-.ft-col li:hover { color: #111; }
-.ft-giant { font-family: 'Oswald', sans-serif; font-size: 15vw; font-weight: 700; color: transparent; -webkit-text-stroke: 1.5px #e8e8e8; text-align: center; line-height: 0.8; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.01em; user-select: none; }
-.ft-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid #eaeaea; font-size: 11.5px; color: #999; font-weight: 500; }
-.ft-bottom-links { display: flex; gap: 16px; }
-.ft-bottom-links span { cursor: pointer; transition: color 0.2s; }
-.ft-bottom-links span:hover { color: #111; }
+.footer { border-top: 1px solid #eaeaea; padding: 100px 40px 40px; display: flex; flex-direction: column; gap: 80px; background: #fafafa; }
+.footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1.5fr; gap: 60px; }
+.footer-col h4 { font-size: 12px; font-weight: 600; color: #111; margin-bottom: 24px; text-transform: uppercase; letter-spacing: 0.05em; }
+.footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+.footer-col li { font-size: 14px; color: #666; cursor: pointer; transition: color 0.2s; }
+.footer-col li:hover { color: #111; }
+.newsletter-input { width: 100%; border: none; border-bottom: 1px solid #ccc; padding: 12px 0; outline: none; font-size: 14px; font-family: 'Inter', sans-serif; background: transparent; transition: border-color 0.3s; color: #111; }
+.newsletter-input:focus { border-color: #111; }
+.footer-bottom { display: flex; justify-content: space-between; align-items: center; color: #888; font-size: 13px; border-top: 1px solid #eaeaea; padding-top: 32px; }
+.footer-logo { font-size: 1.5rem; font-weight: 700; color: #111; letter-spacing: -0.05em; text-transform: lowercase; }
+.social-links { display: flex; gap: 24px; }
+.social-links span { cursor: pointer; transition: color 0.2s; }
+.social-links span:hover { color: #111; }
 
-/* ── Tablet ── */
+/* ── Responsive ── */
 @media (max-width: 1024px) {
-  .pdp-container { padding: 24px 24px 40px; gap: 32px; grid-template-columns: 1fr 1fr; }
-  .pdp-title { font-size: 1.6rem; }
-  .ft-links { gap: 32px; }
-  .breadcrumb { padding: 10px 24px; }
-}
-@media (max-width: 860px) {
-  .pdp-container { grid-template-columns: 1fr; gap: 24px; max-width: 600px; }
+  .pdp-container { grid-template-columns: 1fr; gap: 40px; }
   .pdp-image-col { position: relative; top: 0; }
-  .pdp-main-img { aspect-ratio: 4/3; border-radius: 12px; }
-  .pdp-title { font-size: 1.5rem; }
+  .pdp-info-col { max-width: 100%; }
+  .footer-grid { grid-template-columns: 1fr 1fr; gap: 60px 40px; }
 }
 @media (max-width: 768px) {
-  .nav { padding: 0 16px; height: 54px; }
-  .nav-logo { font-size: 1.2rem; }
-  .breadcrumb { padding: 8px 16px; }
-  .pdp-container { padding: 16px 14px 32px; }
-  .pdp-title { font-size: 1.4rem; }
-  .pdp-price { font-size: 1.15rem; }
-  .add-to-cart-huge { padding: 14px; font-size: 12px; }
-  .ft-top { flex-direction: column; gap: 24px; }
-  .ft-links { flex-wrap: wrap; gap: 24px; }
-  .footer { padding: 32px 16px 20px; margin-top: 24px; }
-  .ft-bottom { flex-direction: column; gap: 10px; align-items: flex-start; }
+  .nav { padding: 0 24px; height: 64px; }
+  .nav-left { display: none; }
+  .nav-center { justify-content: flex-start; }
+  .breadcrumb { margin-top: 64px; padding: 16px 24px; }
+  .pdp-container { padding: 0 24px 60px; }
+  .pdp-image-col { flex-direction: column-reverse; gap: 12px; }
+  .pdp-thumbnails { flex-direction: row; width: 100%; overflow-x: auto; gap: 8px; }
+  .pdp-thumb { width: 60px; aspect-ratio: 3/4; }
+  .footer { padding: 80px 24px 32px; gap: 60px; }
+  .footer-grid { grid-template-columns: 1fr; gap: 48px; }
+  .footer-bottom { flex-direction: column; gap: 24px; align-items: flex-start; }
 }
 `;
 
@@ -121,6 +124,7 @@ const ProductDetails = () => {
     const { productId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
+    const dispatch = useDispatch();
     const { handleGetProductDetails } = useProducts();
     const user = useSelector(state => state.auth?.user);
     const cartCount = useSelector(state => state.cart?.items?.length || 0);
@@ -132,7 +136,13 @@ const ProductDetails = () => {
     const [activeImgIdx, setActiveImgIdx] = useState(0);
     const [openAccordion, setOpenAccordion] = useState(null);
 
-    const { handleAddItem } = addToCart()
+    const { handleAddItem } = addToCart();
+
+    const handleLogout = async () => {
+        await logoutUser();
+        dispatch(setUser(null));
+        navigate('/');
+    };
 
     // Smart back navigation — use history if available, otherwise go home
     const handleBack = () => {
@@ -189,20 +199,15 @@ const ProductDetails = () => {
         }
     }, [selectedVariantIdx, product]);
 
-    const DUMMY_IMAGES = [
-        'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=1200',
-        'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=1200'
-    ];
-
     if (loading) return (
-        <div style={{ padding: 100, textAlign: 'center', fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#888', background: '#f7f7f5', minHeight: '100vh' }}>
+        <div style={{ padding: 100, textAlign: 'center', fontFamily: 'Inter, sans-serif', fontSize: 14, color: '#888', minHeight: '100vh' }}>
             Loading product...
         </div>
     );
     if (!product) return (
-        <div style={{ padding: 100, textAlign: 'center', fontFamily: 'Inter, sans-serif', minHeight: '100vh', background: '#f7f7f5' }}>
+        <div style={{ padding: 100, textAlign: 'center', fontFamily: 'Inter, sans-serif', minHeight: '100vh' }}>
             <p style={{ fontSize: 15, color: '#555', marginBottom: 24 }}>Product not found.</p>
-            <button onClick={() => navigate('/')} style={{ background: '#111', color: '#fff', border: 'none', padding: '12px 28px', borderRadius: 100, fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
+            <button onClick={() => navigate('/')} style={{ background: '#111', color: '#fff', border: 'none', padding: '12px 28px', fontWeight: 600, cursor: 'pointer', fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 Back to Shop
             </button>
         </div>
@@ -216,7 +221,7 @@ const ProductDetails = () => {
     const getImages = () => {
         if (activeVariant?.images?.length > 0) return activeVariant.images.map(img => img.url);
         if (product?.image?.length > 0) return product.image.map(img => img.url);
-        return DUMMY_IMAGES;
+        return [];
     };
 
     const images = getImages();
@@ -229,7 +234,7 @@ const ProductDetails = () => {
     };
 
     const getVariantThumb = (v) => {
-        return v.images?.[0]?.url || product.image?.[0]?.url || DUMMY_IMAGES[0];
+        return v.images?.[0]?.url || product.image?.[0]?.url;
     };
 
     return (
@@ -239,48 +244,45 @@ const ProductDetails = () => {
             {/* Navbar */}
             <nav className="nav">
                 <div className="nav-left">
-                    <button
-                        className="btn-pill-outline"
-                        onClick={handleBack}
-                        style={{ border: 'none', display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', background: 'none' }}
-                    >
-                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                        <span style={{ fontSize: 13, fontWeight: 600 }}>Back</span>
-                    </button>
+                   <span className="nav-link" onClick={() => navigate('/')}>Shop</span>
+                   <span className="nav-link">Collections</span>
                 </div>
                 <div className="nav-center">
-                    <span className="nav-logo" onClick={() => navigate('/')}>VOIDWEAR</span>
+                  <span className="nav-logo" onClick={() => navigate('/')}>voidwear.</span>
                 </div>
                 <div className="nav-right">
-                    {user ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span style={{ fontSize: '13px', fontWeight: 600 }}>Hello, {user.fullname || 'User'}</span>
-                            {user.role === 'buyer' && (
-                                <button id="pdp-cart-btn" className="cart-icon-btn" onClick={() => navigate('/cart')} title="View Cart">
-                                    <i className="ri-shopping-bag-3-line" style={{ fontSize: 22 }}></i>
-                                    {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
-                                </button>
-                            )}
-                        </div>
-                    ) : (
-                        <>
-                            <button className="btn-pill-outline" onClick={() => navigate('/login')}>Sign In</button>
-                            <button className="btn-pill" onClick={() => navigate('/register')}>Get Started</button>
-                        </>
-                    )}
+                  {user ? (
+                    <>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#111' }}>
+                        {user.fullname?.split(' ')[0]}
+                      </span>
+                      {user.role === 'buyer' && (
+                        <button className="nav-icon" onClick={() => navigate('/cart')} title="View Cart">
+                          <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                          </svg>
+                          {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
+                        </button>
+                      )}
+                      <button className="nav-link-logout" onClick={handleLogout}>Logout</button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="nav-link" onClick={() => navigate('/login')}>Login</span>
+                      <span className="nav-link" onClick={() => navigate('/register')}>Register</span>
+                    </>
+                  )}
                 </div>
             </nav>
 
             {/* Breadcrumb */}
             <div className="breadcrumb">
                 <span className="breadcrumb-link" onClick={() => navigate('/')}>All Products</span>
-                <span className="breadcrumb-sep">›</span>
+                <span className="breadcrumb-sep">/</span>
                 <span className="breadcrumb-current">{product.title}</span>
                 {activeVariant && (
                     <>
-                        <span className="breadcrumb-sep">›</span>
+                        <span className="breadcrumb-sep">/</span>
                         <span className="breadcrumb-current">{getVariantLabel(activeVariant, selectedVariantIdx)}</span>
                     </>
                 )}
@@ -289,7 +291,6 @@ const ProductDetails = () => {
             <div className="pdp-container">
                 {/* Image Column */}
                 <div className="pdp-image-col">
-                    <img src={images[safeActiveImgIdx]} alt={product.title} className="pdp-main-img" />
                     {images.length > 1 && (
                         <div className="pdp-thumbnails">
                             {images.map((img, idx) => (
@@ -303,69 +304,74 @@ const ProductDetails = () => {
                             ))}
                         </div>
                     )}
+                    <div className="pdp-main-img-wrap">
+                        {images.length > 0 && (
+                            <img src={images[safeActiveImgIdx]} alt={product.title} className="pdp-main-img" />
+                        )}
+                    </div>
                 </div>
 
                 {/* Info Column */}
                 <div className="pdp-info-col">
                     <h1 className="pdp-title">{product.title}</h1>
                     <div className="pdp-price">{SYM[displayPrice?.currency] || '₹'}{Number(displayPrice?.amount || 0).toLocaleString()}</div>
+                    
                     {stockAvailable !== null && (
                         <div className="pdp-stock">
-                            {stockAvailable > 0 ? `${stockAvailable} in stock` : 'Out of Stock'}
+                            {stockAvailable > 0 ? `${stockAvailable} In Stock` : 'Out of Stock'}
                         </div>
                     )}
+                    
                     <p className="pdp-desc">{product.description}</p>
 
                     {/* ── All Variants Panel ── */}
                     {hasVariants && (
-                        <div style={{ marginBottom: 24 }}>
+                        <div style={{ marginBottom: 40 }}>
                             <div className="pdp-section-title">
-                                {product.variants.length} Variant{product.variants.length !== 1 ? 's' : ''} Available
+                                <span>{product.variants.length} Variant{product.variants.length !== 1 ? 's' : ''} Available</span>
                             </div>
-                            <div className="all-variants-panel">
-                                <div className="all-variants-scroll">
-                                    {/* "Base product" option */}
-                                    <div className="av-item" onClick={() => { setSelectedVariantIdx(null); setActiveImgIdx(0); }}>
-                                        <img
-                                            src={product.image?.[0]?.url || DUMMY_IMAGES[0]}
-                                            className={`av-img ${selectedVariantIdx === null ? 'active' : ''}`}
-                                            alt="Base"
-                                        />
-                                        <span className="av-label">Base</span>
-                                    </div>
-                                    {/* Each variant */}
-                                    {product.variants.map((v, idx) => (
-                                        <div
-                                            key={idx}
-                                            className="av-item"
-                                            onClick={() => { setSelectedVariantIdx(idx); setActiveImgIdx(0); }}
-                                        >
-                                            <img
-                                                src={getVariantThumb(v)}
-                                                className={`av-img ${selectedVariantIdx === idx ? 'active' : ''}`}
-                                                alt={getVariantLabel(v, idx)}
-                                            />
-                                            <span className="av-label">{getVariantLabel(v, idx)}</span>
-                                        </div>
-                                    ))}
+                            <div className="all-variants-scroll">
+                                {/* "Base product" option */}
+                                <div className="av-item" onClick={() => { setSelectedVariantIdx(null); setActiveImgIdx(0); }}>
+                                    <img
+                                        src={product.image?.[0]?.url}
+                                        className={`av-img ${selectedVariantIdx === null ? 'active' : ''}`}
+                                        alt="Base"
+                                    />
+                                    <span className="av-label">Base</span>
                                 </div>
+                                {/* Each variant */}
+                                {product.variants.map((v, idx) => (
+                                    <div
+                                        key={idx}
+                                        className="av-item"
+                                        onClick={() => { setSelectedVariantIdx(idx); setActiveImgIdx(0); }}
+                                    >
+                                        <img
+                                            src={getVariantThumb(v)}
+                                            className={`av-img ${selectedVariantIdx === idx ? 'active' : ''}`}
+                                            alt={getVariantLabel(v, idx)}
+                                        />
+                                        <span className="av-label">{getVariantLabel(v, idx)}</span>
+                                    </div>
+                                ))}
                             </div>
                         </div>
                     )}
 
                     {/* ── Dynamic Attribute Selectors (shown once a variant is picked) ── */}
                     {activeVariant?.attributes && (
-                        <div>
+                        <div style={{ marginBottom: 40 }}>
                             {Object.entries(activeVariant.attributes).map(([attrKey, attrVal]) => {
                                 const options = String(attrVal).split(',').map(s => s.trim()).filter(Boolean);
                                 const isMulti = options.length > 1;
                                 return (
-                                    <div key={attrKey} style={{ marginBottom: 20 }}>
+                                    <div key={attrKey}>
                                         <div className="pdp-section-title">
-                                            {attrKey}
+                                            <span>{attrKey}</span>
                                             {isMulti && selectedOptions[attrKey] && (
-                                                <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, marginLeft: 8, color: '#666' }}>
-                                                    — {selectedOptions[attrKey]}
+                                                <span style={{ color: '#888', fontWeight: 400 }}>
+                                                    {selectedOptions[attrKey]}
                                                 </span>
                                             )}
                                         </div>
@@ -381,14 +387,9 @@ const ProductDetails = () => {
                                                     </button>
                                                 ))
                                             ) : (
-                                                <span style={{
-                                                    display: 'inline-flex', alignItems: 'center',
-                                                    padding: '6px 16px', borderRadius: 24,
-                                                    border: '1px solid #111', background: '#111',
-                                                    color: '#fff', fontSize: 13, fontWeight: 600
-                                                }}>
+                                                <div className="size-btn selected" style={{flex: 'none', padding: '0 24px'}}>
                                                     {options[0]}
-                                                </span>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
@@ -399,7 +400,7 @@ const ProductDetails = () => {
 
                     {/* Fallback size selector */}
                     {!hasVariants && (
-                        <>
+                        <div style={{ marginBottom: 40 }}>
                             <div className="pdp-section-title">Select Size</div>
                             <div className="size-selector">
                                 {['XS', 'S', 'M', 'L', 'XL'].map(size => (
@@ -412,24 +413,25 @@ const ProductDetails = () => {
                                     </button>
                                 ))}
                             </div>
-                        </>
+                        </div>
                     )}
 
                     <button onClick={() => {
-                        if (!activeVariant) {
-                            alert("Please select a variant first");
+                        if (!user) {
+                            navigate('/login');
+                            return;
+                        }
+                        if (hasVariants && selectedVariantIdx === null) {
+                            alert('Please select a variant first');
                             return;
                         }
                         handleAddItem({
                             productId: product._id,
-                            variantId: activeVariant._id,
-                        })
-                    }}
-                    
-                    
-                    
-                    
-                    className="add-to-cart-huge">Add to Cart</button>
+                            variantId: activeVariant ? activeVariant._id : undefined,
+                        });
+                    }} className="add-to-cart-huge">
+                        {user ? 'Add to Cart' : 'Login to Add to Cart'}
+                    </button>
 
                     {/* Accordion */}
                     <div className="accordion">
@@ -437,7 +439,7 @@ const ProductDetails = () => {
                             <div className="accordion-item" key={idx}>
                                 <div className="accordion-header" onClick={() => toggleAccordion(idx)}>
                                     <span>{item.title}</span>
-                                    <svg className={`accordion-icon ${openAccordion === idx ? 'open' : ''}`} width="18" height="18" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                    <svg className={`accordion-icon ${openAccordion === idx ? 'open' : ''}`} width="18" height="18" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </div>
@@ -448,19 +450,44 @@ const ProductDetails = () => {
                 </div>
             </div>
 
-            {/* Footer */}
             <footer className="footer">
-                <div className="ft-top">
-                    <div className="ft-links">
-                        <div className="ft-col"><h4>Shop</h4><ul><li onClick={() => navigate('/')}>All Products</li><li>New Arrivals</li><li>Best Sellers</li></ul></div>
-                        <div className="ft-col"><h4>Company</h4><ul><li>About Us</li><li>Careers</li><li>Press</li></ul></div>
-                        <div className="ft-col"><h4>Support</h4><ul><li>Contact</li><li>Returns</li><li>FAQ</li></ul></div>
-                    </div>
+                <div className="footer-grid">
+                <div className="footer-col">
+                    <div className="footer-logo" style={{marginBottom: 16}}>voidwear.</div>
+                    <p style={{color: '#666', fontSize: 14, lineHeight: 1.6, maxWidth: 250}}>
+                    Redefining contemporary streetwear with minimal design and premium quality.
+                    </p>
                 </div>
-                <div className="ft-giant">VOIDWEAR</div>
-                <div className="ft-bottom">
-                    <span>© {new Date().getFullYear()} Voidwear. All rights reserved.</span>
-                    <div className="ft-bottom-links"><span>Terms of Service</span><span>Privacy Policy</span></div>
+                <div className="footer-col">
+                    <h4>Shop</h4>
+                    <ul>
+                    <li>New Arrivals</li>
+                    <li>T-Shirts</li>
+                    <li>Hoodies</li>
+                    <li>Accessories</li>
+                    </ul>
+                </div>
+                <div className="footer-col">
+                    <h4>Information</h4>
+                    <ul>
+                    <li>About Us</li>
+                    <li>Shipping & Returns</li>
+                    <li>Privacy Policy</li>
+                    <li>Terms of Service</li>
+                    </ul>
+                </div>
+                <div className="footer-col">
+                    <h4>Newsletter</h4>
+                    <p style={{color: '#666', fontSize: 14, marginBottom: 16}}>Subscribe to receive updates, access to exclusive deals, and more.</p>
+                    <input type="email" placeholder="Enter your email" className="newsletter-input" />
+                </div>
+                </div>
+                <div className="footer-bottom">
+                <span>© {new Date().getFullYear()} Voidwear. All rights reserved.</span>
+                <div className="social-links">
+                    <span>Instagram</span>
+                    <span>Twitter</span>
+                </div>
                 </div>
             </footer>
         </div>

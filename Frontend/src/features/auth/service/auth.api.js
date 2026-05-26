@@ -31,3 +31,11 @@ export async function getMe() {
     const response = await authApiInstance.get("/me")
     return response.data
 }
+
+export async function logoutUser() {
+    try {
+        await authApiInstance.post("/logout")
+    } catch {
+        // ignore — clear local state regardless
+    }
+}

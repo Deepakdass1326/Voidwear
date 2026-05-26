@@ -4,6 +4,86 @@ import { useAuth } from '../hook/useAuth';
 import { useNavigate, Navigate } from 'react-router';
 import { useSelector } from 'react-redux';
 
+const css = `
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
+
+.auth-shell { display: flex; height: 100vh; overflow: hidden; background: #fff; font-family: 'Inter', sans-serif; }
+
+/* ── Left Banner ── */
+.auth-banner { display: none; position: relative; background: #000; flex: 1; }
+.auth-banner img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(30%) brightness(0.85); }
+.auth-banner-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 60%); display: flex; align-items: flex-end; padding: 48px; }
+.auth-banner-logo { font-weight: 700; font-size: 2rem; letter-spacing: -0.05em; color: #fff; cursor: pointer; text-transform: lowercase; opacity: 0.95; transition: opacity 0.2s; }
+.auth-banner-logo:hover { opacity: 1; }
+
+/* ── Right Form Panel ── */
+.auth-panel { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px; overflow-y: auto; }
+.auth-form-wrap { width: 100%; max-width: 440px; }
+
+/* ── Mobile header ── */
+.auth-mobile-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 48px; }
+.auth-mobile-logo { font-weight: 700; font-size: 1.4rem; letter-spacing: -0.05em; color: #000; cursor: pointer; text-transform: lowercase; }
+.auth-back-btn { font-size: 11px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.06em; background: none; border: none; cursor: pointer; transition: color 0.2s; font-family: 'Inter', sans-serif; }
+.auth-back-btn:hover { color: #000; }
+
+/* ── Heading ── */
+.auth-heading { margin-bottom: 36px; }
+.auth-heading h1 { font-size: 1.75rem; font-weight: 500; color: #111; letter-spacing: -0.03em; margin-bottom: 6px; }
+.auth-heading p { font-size: 14px; color: #888; }
+
+/* ── Fields ── */
+.auth-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; margin-bottom: 32px; }
+.auth-field-full { grid-column: 1 / -1; }
+.auth-field { display: flex; flex-direction: column; border-bottom: 1px solid #e0e0e0; transition: border-color 0.2s; padding-bottom: 10px; padding-top: 16px; }
+.auth-field:focus-within { border-color: #111; }
+.auth-field label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.auth-field input { border: none; outline: none; background: transparent; font-family: 'Inter', sans-serif; font-size: 15px; color: #111; }
+.auth-field input::placeholder { color: #ccc; }
+
+/* ── Seller toggle ── */
+.auth-seller-toggle { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; padding: 16px; border: 1px solid #eaeaea; cursor: pointer; transition: border-color 0.2s; }
+.auth-seller-toggle:hover { border-color: #ccc; }
+.auth-seller-toggle input { accent-color: #111; width: 15px; height: 15px; cursor: pointer; }
+.auth-seller-toggle span { font-size: 13px; color: #444; cursor: pointer; }
+
+/* ── Error ── */
+.auth-error { font-size: 13px; color: #c0392b; background: #fef2f2; padding: 12px 16px; margin-bottom: 24px; border-left: 3px solid #c0392b; }
+
+/* ── Submit button ── */
+.auth-submit { width: 100%; background: #111; color: #fff; border: none; padding: 16px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; cursor: pointer; transition: background 0.2s; margin-bottom: 16px; }
+.auth-submit:hover { background: #000; }
+.auth-submit:disabled { background: #ccc; cursor: not-allowed; }
+
+/* ── Divider ── */
+.auth-divider { display: flex; align-items: center; gap: 16px; margin: 20px 0; }
+.auth-divider-line { flex: 1; height: 1px; background: #eaeaea; }
+.auth-divider span { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap; }
+
+/* ── Google button ── */
+.auth-google { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; border: 1px solid #e0e0e0; background: #fff; padding: 13px; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #111; text-decoration: none; cursor: pointer; transition: background 0.2s; }
+.auth-google:hover { background: #f8f8f8; }
+
+/* ── Footer links ── */
+.auth-footer { margin-top: 32px; text-align: center; font-size: 13px; color: #888; }
+.auth-footer a, .auth-footer span { color: #111; font-weight: 600; cursor: pointer; text-decoration: none; }
+.auth-footer a:hover, .auth-footer span:hover { text-decoration: underline; }
+.auth-return { display: block; margin-top: 16px; font-size: 11px; color: #bbb; text-transform: uppercase; letter-spacing: 0.06em; cursor: pointer; transition: color 0.2s; text-align: center; }
+.auth-return:hover { color: #555; }
+
+/* ── Responsive ── */
+@media (min-width: 1024px) {
+  .auth-banner { display: flex; }
+  .auth-mobile-header { display: none; }
+}
+@media (max-width: 480px) {
+  .auth-fields { grid-template-columns: 1fr; }
+  .auth-field-full { grid-column: 1; }
+}
+`;
+
 const Register = () => {
     const navigate = useNavigate();
     const { handleRegister } = useAuth();
@@ -21,7 +101,6 @@ const Register = () => {
     const [error, setError] = useState('');
     const [submitting, setSubmitting] = useState(false);
 
-    // Already logged in → redirect away
     if (!loading && user) {
         return <Navigate to={user.role === 'seller' ? '/seller/products' : '/'} replace />;
     }
@@ -44,140 +123,101 @@ const Register = () => {
                 fullname: formData.fullname,
                 isSeller: formData.isSeller,
             });
-            // Navigate only on success, based on role
-            if (user?.role === 'seller') {
-                navigate('/seller/products', { replace: true });
-            } else {
-                navigate('/', { replace: true });
-            }
+            navigate(user?.role === 'seller' ? '/seller/products' : '/', { replace: true });
         } catch (err) {
             setError(err?.response?.data?.message || 'Registration failed. Please try again.');
-            // Do NOT navigate on error
         } finally {
             setSubmitting(false);
         }
     };
 
     return (
-        <div className="flex h-screen overflow-hidden bg-gray-50 font-['Inter']">
+        <div className="auth-shell">
+            <style>{css}</style>
 
             {/* Left Banner */}
-            <div className="hidden lg:flex lg:w-1/2 relative bg-black">
-                <img src={bannerImage} alt="Voidwear Banner" className="object-cover w-full h-full" />
-                <div className="absolute inset-0 flex items-end p-10">
-                    <span
-                        onClick={() => navigate('/')}
-                        className="font-['Oswald'] font-bold text-white text-4xl tracking-widest uppercase cursor-pointer select-none opacity-90 hover:opacity-100 transition-opacity"
-                    >
-                        VOIDWEAR
-                    </span>
+            <div className="auth-banner">
+                <img src={bannerImage} alt="Voidwear" />
+                <div className="auth-banner-overlay">
+                    <span className="auth-banner-logo" onClick={() => navigate('/')}>voidwear.</span>
                 </div>
             </div>
 
             {/* Right Form */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-8 lg:p-12 overflow-y-auto">
-                <div className="w-full max-w-lg space-y-6">
+            <div className="auth-panel">
+                <div className="auth-form-wrap">
 
-                    {/* Mobile logo + back link */}
-                    <div className="flex items-center justify-between lg:hidden">
-                        <span
-                            onClick={() => navigate('/')}
-                            className="font-['Oswald'] font-bold text-2xl tracking-widest uppercase cursor-pointer select-none"
-                        >
-                            VOIDWEAR
-                        </span>
-                        <button
-                            type="button"
-                            onClick={() => navigate('/')}
-                            className="text-xs text-gray-500 hover:text-gray-900 transition-colors bg-transparent border-none cursor-pointer"
-                        >
-                            ← Back to shop
-                        </button>
+                    {/* Mobile Header */}
+                    <div className="auth-mobile-header">
+                        <span className="auth-mobile-logo" onClick={() => navigate('/')}>voidwear.</span>
+                        <button className="auth-back-btn" onClick={() => navigate('/')}>← Shop</button>
                     </div>
 
-                    <div className="text-center lg:text-left">
-                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">Create an account</h1>
-                        <p className="mt-1 sm:mt-2 text-sm text-gray-500">Start your journey with Voidwear today.</p>
+                    <div className="auth-heading">
+                        <h1>Create account</h1>
+                        <p>Start your journey with Voidwear today.</p>
                     </div>
 
-                    <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="fullname">Full Name</label>
+                    <form onSubmit={handleSubmit}>
+                        <div className="auth-fields">
+                            <div className="auth-field">
+                                <label htmlFor="fullname">Full Name</label>
                                 <input
                                     id="fullname" name="fullname" type="text" required
                                     value={formData.fullname} onChange={handleChange}
-                                    className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2.5 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:text-sm transition-colors"
                                     placeholder="John Doe"
                                 />
                             </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="email">Email address</label>
+                            <div className="auth-field">
+                                <label htmlFor="email">Email Address</label>
                                 <input
                                     id="email" name="email" type="email" required
                                     value={formData.email} onChange={handleChange}
-                                    className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2.5 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:text-sm transition-colors"
                                     placeholder="you@example.com"
                                 />
                             </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="contact">Contact Number</label>
+                            <div className="auth-field">
+                                <label htmlFor="contact">Contact Number</label>
                                 <input
                                     id="contact" name="contact" type="tel" required
                                     value={formData.contact} onChange={handleChange}
-                                    className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2.5 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:text-sm transition-colors"
                                     placeholder="+91 00000 00000"
                                 />
                             </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1" htmlFor="password">Password</label>
+                            <div className="auth-field">
+                                <label htmlFor="password">Password</label>
                                 <input
                                     id="password" name="password" type="password" required
                                     value={formData.password} onChange={handleChange}
-                                    className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2.5 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:text-sm transition-colors"
                                     placeholder="••••••••"
                                 />
                             </div>
                         </div>
 
-                        {/* Seller checkbox */}
-                        <div className="flex items-center mt-2">
+                        <label className="auth-seller-toggle">
                             <input
-                                id="isSeller" name="isSeller" type="checkbox"
-                                checked={formData.isSeller} onChange={handleChange}
-                                className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black accent-black cursor-pointer"
+                                type="checkbox"
+                                name="isSeller"
+                                checked={formData.isSeller}
+                                onChange={handleChange}
                             />
-                            <label htmlFor="isSeller" className="ml-2 block text-sm text-gray-900 cursor-pointer">
-                                I want to register as a Seller
-                            </label>
+                            <span>Register as a Seller</span>
+                        </label>
+
+                        {error && <div className="auth-error">{error}</div>}
+
+                        <button type="submit" className="auth-submit" disabled={submitting}>
+                            {submitting ? 'Creating account…' : 'Create Account'}
+                        </button>
+
+                        <div className="auth-divider">
+                            <div className="auth-divider-line" />
+                            <span>Or</span>
+                            <div className="auth-divider-line" />
                         </div>
 
-                        {/* Error message */}
-                        {error && (
-                            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-                                {error}
-                            </p>
-                        )}
-
-                        <div className="relative my-4">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-gray-200" />
-                            </div>
-                            <div className="relative flex justify-center text-sm">
-                                <span className="bg-gray-50 px-2 text-gray-400">Or continue with</span>
-                            </div>
-                        </div>
-
-                        {/* Google */}
-                        <a
-                            href="http://localhost:5000/api/auth/google"
-                            className="flex w-full items-center justify-center gap-3 rounded-md border border-gray-300 bg-white py-2.5 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition-transform active:scale-[0.98]"
-                        >
-                            <svg className="h-5 w-5" viewBox="0 0 24 24">
+                        <a href="http://localhost:5000/api/auth/google" className="auth-google">
+                            <svg width="18" height="18" viewBox="0 0 24 24">
                                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
                                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
                                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
@@ -185,36 +225,13 @@ const Register = () => {
                             </svg>
                             Continue with Google
                         </a>
-
-                        <div className="pt-2">
-                            <button
-                                type="submit"
-                                disabled={submitting}
-                                className={`flex w-full justify-center rounded-md border border-transparent bg-black py-2.5 px-4 text-sm font-medium text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 transition-all active:scale-[0.98] ${submitting ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-800 cursor-pointer'}`}
-                            >
-                                {submitting ? 'Creating account…' : 'Sign up'}
-                            </button>
-                        </div>
                     </form>
 
-                    <p className="text-center text-xs text-gray-600 pb-2">
+                    <div className="auth-footer">
                         Already have an account?{' '}
-                        <span
-                            onClick={() => navigate('/login')}
-                            className="font-semibold text-black hover:underline cursor-pointer"
-                        >
-                            Sign in
-                        </span>
-                    </p>
-
-                    <p className="hidden lg:block text-center text-xs text-gray-400">
-                        <span
-                            onClick={() => navigate('/')}
-                            className="hover:text-gray-700 cursor-pointer transition-colors"
-                        >
-                            ← Continue browsing without signing in
-                        </span>
-                    </p>
+                        <span onClick={() => navigate('/login')}>Sign in</span>
+                    </div>
+                    <span className="auth-return" onClick={() => navigate('/')}>← Continue browsing</span>
                 </div>
             </div>
         </div>
