@@ -110,8 +110,12 @@ export const googleCallback = async (req, res) => {
 
   res.cookie("token", token)
 
+  // Redirect based on role — sellers go to their dashboard, buyers go to home
+  const destination = user.role === 'seller'
+    ? 'http://localhost:5173/seller/products'
+    : 'http://localhost:5173/';
 
-  res.redirect("http://localhost:5173/dashboard")
+  res.redirect(destination)
 
 }
 

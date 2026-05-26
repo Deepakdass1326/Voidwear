@@ -4,11 +4,88 @@ import { useProducts } from '../hooks/useProducts';
 
 const CURRENCIES = ['INR', 'USD', 'EUR', 'GBP', 'JYP'];
 
-const inputBase =
-    "w-full px-3 py-2.5 text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all duration-200 focus:border-black focus:ring-2 focus:ring-black/5 focus:bg-white font-['Inter'] placeholder-gray-400";
+const css = `
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@800&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
 
-const selectBase =
-    "w-full px-3 py-2.5 text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg outline-none transition-all duration-200 focus:border-black focus:ring-2 focus:ring-black/5 focus:bg-white appearance-none cursor-pointer font-['Inter']";
+.cp-shell { min-height: 100vh; background: #f7f7f5; display: flex; flex-direction: column; }
+
+/* Navbar */
+.cp-nav { position: sticky; top: 0; z-index: 50; background: #fff; border-bottom: 1px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; height: 60px; }
+.cp-logo { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.1rem; letter-spacing: 0.18em; text-transform: uppercase; color: #111; user-select: none; }
+.cp-nav-back { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: #6b7280; background: none; border: none; cursor: pointer; transition: color 0.2s; font-family: 'Inter', sans-serif; }
+.cp-nav-back:hover { color: #111; }
+
+/* Main */
+.cp-main { width: 100%; max-width: 760px; margin: 0 auto; padding: 40px 24px 64px; }
+.cp-header { margin-bottom: 32px; }
+.cp-title { font-size: 1.75rem; font-weight: 700; color: #111; letter-spacing: -0.02em; line-height: 1; }
+.cp-subtitle { margin-top: 6px; font-size: 14px; color: #9ca3af; }
+
+/* Form Sections */
+.cp-form { display: flex; flex-direction: column; gap: 20px; }
+.cp-section { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 32px; }
+.cp-section-title { font-size: 11px; font-weight: 600; color: #9ca3af; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #f3f4f6; }
+
+.cp-field-group { display: flex; flex-direction: column; gap: 20px; }
+.cp-field-row { display: grid; grid-template-columns: 1fr; gap: 20px; }
+@media(min-width: 640px) { .cp-field-row { grid-template-columns: 1fr 1fr; } }
+
+.cp-field { display: flex; flex-direction: column; gap: 6px; }
+.cp-label { font-size: 12px; font-weight: 500; color: #6b7280; }
+.cp-label span { color: #111; font-weight: 600; }
+.cp-input-wrap { position: relative; }
+.cp-input { width: 100%; padding: 10px 12px; font-size: 14px; color: #111; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; outline: none; transition: all 0.2s; font-family: 'Inter', sans-serif; }
+.cp-input:focus { border-color: #111; background: #fff; box-shadow: 0 0 0 2px rgba(0,0,0,0.05); }
+.cp-input::placeholder { color: #9ca3af; }
+.cp-input-error { border-color: #f87171 !important; }
+.cp-input-error:focus { box-shadow: 0 0 0 2px rgba(248,113,113,0.1) !important; }
+
+.cp-currency-symbol { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; color: #9ca3af; font-weight: 500; user-select: none; }
+.cp-input-with-symbol { padding-left: 28px; }
+
+.cp-select { appearance: none; cursor: pointer; }
+.cp-select-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #9ca3af; pointer-events: none; }
+
+.cp-error-msg { font-size: 12px; color: #ef4444; display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+
+/* Dropzone */
+.cp-dropzone { border: 2px dashed #e5e7eb; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 56px 20px; cursor: pointer; transition: all 0.2s; text-align: center; user-select: none; background: #f9fafb; }
+.cp-dropzone:hover { border-color: #9ca3af; background: #fff; }
+.cp-dropzone-active { border-color: #111; background: #f9fafb; }
+.cp-dropzone-error { border-color: #f87171; background: rgba(254,242,242,0.5); }
+.cp-dropzone svg { width: 36px; height: 36px; color: #d1d5db; }
+.cp-dropzone-text { font-size: 14px; font-weight: 500; color: #6b7280; }
+.cp-dropzone-text span { color: #111; text-decoration: underline; text-underline-offset: 2px; }
+.cp-dropzone-sub { font-size: 12px; color: #d1d5db; margin-top: 4px; }
+
+/* Image Previews */
+.cp-preview-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+.cp-preview-item { position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb; }
+.cp-preview-item img { width: 100%; height: 100%; object-fit: cover; }
+.cp-preview-remove { position: absolute; inset: 0; background: rgba(0,0,0,0.4); opacity: 0; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; transition: opacity 0.15s; }
+.cp-preview-item:hover .cp-preview-remove { opacity: 1; }
+.cp-preview-remove svg { width: 20px; height: 20px; color: #fff; }
+.cp-preview-badge { position: absolute; bottom: 4px; left: 4px; font-size: 9px; font-weight: 600; background: rgba(0,0,0,0.7); color: #fff; padding: 2px 6px; border-radius: 4px; }
+.cp-preview-add { width: 80px; height: 80px; border-radius: 8px; border: 2px dashed #e5e7eb; display: flex; align-items: center; justify-content: center; color: #d1d5db; background: transparent; cursor: pointer; transition: all 0.15s; }
+.cp-preview-add:hover { border-color: #9ca3af; color: #6b7280; }
+
+/* Action Bar */
+.cp-action-bar { display: flex; align-items: center; justify-content: space-between; padding-top: 4px; }
+.cp-req-text { font-size: 12px; color: #9ca3af; }
+.cp-req-text span { color: #111; font-weight: 600; }
+.cp-actions { display: flex; align-items: center; gap: 12px; }
+.cp-btn-cancel { padding: 10px 20px; font-size: 14px; font-weight: 500; color: #6b7280; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; }
+.cp-btn-cancel:hover { background: #f9fafb; border-color: #d1d5db; }
+.cp-btn-submit { display: flex; align-items: center; gap: 8px; padding: 10px 24px; font-size: 14px; font-weight: 600; color: #fff; background: #111; border: 1px solid #111; border-radius: 8px; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif; }
+.cp-btn-submit:hover:not(:disabled) { background: #374151; }
+.cp-btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Toast */
+.cp-toast { position: fixed; bottom: 32px; right: 32px; z-index: 100; display: flex; align-items: center; gap: 8px; background: #111; color: #fff; font-size: 14px; font-weight: 500; padding: 12px 20px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); animation: slideUp 0.3s ease; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+`;
 
 export default function CreateProduct() {
     const navigate = useNavigate();
@@ -22,7 +99,7 @@ export default function CreateProduct() {
         priceCurrency: 'INR',
     });
 
-    const [images, setImages] = useState([]);   // { file, preview }
+    const [images, setImages] = useState([]);
     const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState(false);
     const [toast, setToast] = useState(null);
@@ -99,53 +176,34 @@ export default function CreateProduct() {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 font-['Inter'] flex flex-col">
+        <div className="cp-shell">
+            <style>{css}</style>
 
-            {/* ── Navbar ── */}
-            <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 flex items-center justify-between px-8 h-[60px]">
-                <span className="font-['Montserrat'] font-extrabold text-[1.1rem] tracking-[0.18em] uppercase text-gray-900 select-none">
-                    Voidwear
-                </span>
-                <button
-                    type="button"
-                    onClick={() => navigate(-1)}
-                    className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors duration-200 bg-transparent border-none cursor-pointer"
-                >
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            {/* Navbar */}
+            <nav className="cp-nav">
+                <span className="cp-logo">Voidwear</span>
+                <button type="button" onClick={() => navigate(-1)} className="cp-nav-back">
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
                     </svg>
                     Back
                 </button>
             </nav>
 
-            {/* ── Main ── */}
-            <main className="w-full max-w-[760px] mx-auto px-6 py-10 pb-16">
-
-                {/* Page Header */}
-                <div className="mb-8">
-                    <h1 className="text-[1.75rem] font-bold text-gray-900 tracking-tight leading-none">
-                        New Product
-                    </h1>
-                    <p className="mt-1.5 text-sm text-gray-400">
-                        Fill in the details to list a product on your store.
-                    </p>
+            {/* Main */}
+            <main className="cp-main">
+                <div className="cp-header">
+                    <h1 className="cp-title">New Product</h1>
+                    <p className="cp-subtitle">Fill in the details to list a product on your store.</p>
                 </div>
 
-                <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
-
-                    {/* ── PRODUCT DETAILS ── */}
-                    <section className="bg-white border border-gray-200 rounded-xl p-8">
-                        <p className="text-[0.68rem] font-semibold text-gray-400 uppercase tracking-widest mb-5 pb-3 border-b border-gray-100">
-                            Product Details
-                        </p>
-
-                        <div className="flex flex-col gap-5">
-
-                            {/* Title */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-medium text-gray-500" htmlFor="title">
-                                    Title <span className="text-gray-900 font-semibold">*</span>
-                                </label>
+                <form onSubmit={handleSubmit} noValidate className="cp-form">
+                    {/* PRODUCT DETAILS */}
+                    <section className="cp-section">
+                        <p className="cp-section-title">Product Details</p>
+                        <div className="cp-field-group">
+                            <div className="cp-field">
+                                <label className="cp-label" htmlFor="title">Title <span>*</span></label>
                                 <input
                                     id="title"
                                     name="title"
@@ -153,60 +211,46 @@ export default function CreateProduct() {
                                     placeholder="e.g. Oversized Void Tee"
                                     value={form.title}
                                     onChange={handleChange}
-                                    className={`${inputBase} ${errors.title ? 'border-red-400 focus:border-red-400 focus:ring-red-400/10' : ''}`}
+                                    className={`cp-input ${errors.title ? 'cp-input-error' : ''}`}
                                 />
                                 {errors.title && (
-                                    <span className="text-xs text-red-500 flex items-center gap-1">
-                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                        </svg>
+                                    <span className="cp-error-msg">
+                                        <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                                         {errors.title}
                                     </span>
                                 )}
                             </div>
 
-                            {/* Description */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-medium text-gray-500" htmlFor="description">
-                                    Description <span className="text-gray-900 font-semibold">*</span>
-                                </label>
+                            <div className="cp-field">
+                                <label className="cp-label" htmlFor="description">Description <span>*</span></label>
                                 <textarea
                                     id="description"
                                     name="description"
-                                    rows={4}
+                                    rows="4"
                                     placeholder="Describe the product — materials, fit, key details..."
                                     value={form.description}
                                     onChange={handleChange}
-                                    className={`${inputBase} resize-y min-h-[110px] leading-relaxed ${errors.description ? 'border-red-400 focus:border-red-400 focus:ring-red-400/10' : ''}`}
+                                    className={`cp-input ${errors.description ? 'cp-input-error' : ''}`}
+                                    style={{ resize: 'vertical', minHeight: '110px', lineHeight: '1.5' }}
                                 />
                                 {errors.description && (
-                                    <span className="text-xs text-red-500 flex items-center gap-1">
-                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                        </svg>
+                                    <span className="cp-error-msg">
+                                        <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                                         {errors.description}
                                     </span>
                                 )}
                             </div>
-
                         </div>
                     </section>
 
-                    {/* ── PRICING ── */}
-                    <section className="bg-white border border-gray-200 rounded-xl p-8">
-                        <p className="text-[0.68rem] font-semibold text-gray-400 uppercase tracking-widest mb-5 pb-3 border-b border-gray-100">
-                            Pricing
-                        </p>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-
-                            {/* Price Amount */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-medium text-gray-500" htmlFor="priceAmount">
-                                    Amount <span className="text-gray-900 font-semibold">*</span>
-                                </label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400 font-medium select-none">
+                    {/* PRICING */}
+                    <section className="cp-section">
+                        <p className="cp-section-title">Pricing</p>
+                        <div className="cp-field-row">
+                            <div className="cp-field">
+                                <label className="cp-label" htmlFor="priceAmount">Amount <span>*</span></label>
+                                <div className="cp-input-wrap">
+                                    <span className="cp-currency-symbol">
                                         {form.priceCurrency === 'INR' ? '₹' : form.priceCurrency === 'USD' ? '$' : form.priceCurrency === 'EUR' ? '€' : form.priceCurrency === 'GBP' ? '£' : '¥'}
                                     </span>
                                     <input
@@ -218,197 +262,119 @@ export default function CreateProduct() {
                                         placeholder="0.00"
                                         value={form.priceAmount}
                                         onChange={handleChange}
-                                        className={`${inputBase} pl-7 ${errors.priceAmount ? 'border-red-400 focus:border-red-400 focus:ring-red-400/10' : ''}`}
+                                        className={`cp-input cp-input-with-symbol ${errors.priceAmount ? 'cp-input-error' : ''}`}
                                     />
                                 </div>
                                 {errors.priceAmount && (
-                                    <span className="text-xs text-red-500 flex items-center gap-1">
-                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                        </svg>
+                                    <span className="cp-error-msg">
+                                        <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                                         {errors.priceAmount}
                                     </span>
                                 )}
                             </div>
 
-                            {/* Currency */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-xs font-medium text-gray-500" htmlFor="priceCurrency">
-                                    Currency
-                                </label>
-                                <div className="relative">
+                            <div className="cp-field">
+                                <label className="cp-label" htmlFor="priceCurrency">Currency</label>
+                                <div className="cp-input-wrap">
                                     <select
                                         id="priceCurrency"
                                         name="priceCurrency"
                                         value={form.priceCurrency}
                                         onChange={handleChange}
-                                        className={selectBase}
+                                        className="cp-input cp-select"
                                     >
-                                        {CURRENCIES.map(c => (
-                                            <option key={c} value={c}>{c}</option>
-                                        ))}
+                                        {CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
                                     </select>
-                                    <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <svg className="cp-select-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </div>
                             </div>
-
                         </div>
                     </section>
 
-                    {/* ── IMAGES ── */}
-                    <section className="bg-white border border-gray-200 rounded-xl p-8">
-                        <p className="text-[0.68rem] font-semibold text-gray-400 uppercase tracking-widest mb-5 pb-3 border-b border-gray-100">
-                            Product Images
-                        </p>
-
-                        {/* Drop Zone */}
+                    {/* IMAGES */}
+                    <section className="cp-section">
+                        <p className="cp-section-title">Product Images</p>
+                        
                         <div
                             onClick={() => fileInputRef.current?.click()}
                             onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                             onDragLeave={() => setDragOver(false)}
                             onDrop={handleDrop}
-                            className={`border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-3 py-14 cursor-pointer transition-all duration-200 text-center select-none
-                ${dragOver
-                                    ? 'border-gray-900 bg-gray-50'
-                                    : errors.images
-                                        ? 'border-red-400 bg-red-50/20'
-                                        : 'border-gray-200 bg-gray-50 hover:border-gray-400 hover:bg-white'
-                                }`}
+                            className={`cp-dropzone ${dragOver ? 'cp-dropzone-active' : ''} ${errors.images ? 'cp-dropzone-error' : ''}`}
                         >
-                            <svg className="w-9 h-9 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                <path strokeLinecap="round" strokeLinejoin="round"
-                                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                             </svg>
                             <div>
-                                <p className="text-sm font-medium text-gray-500">
-                                    Drop images here, or <span className="text-gray-900 underline underline-offset-2">browse</span>
-                                </p>
-                                <p className="text-xs text-gray-300 mt-1">PNG, JPG, WEBP — up to 6 images</p>
+                                <p className="cp-dropzone-text">Drop images here, or <span>browse</span></p>
+                                <p className="cp-dropzone-sub">PNG, JPG, WEBP — up to 6 images</p>
                             </div>
                         </div>
 
                         {errors.images && (
-                            <span className="text-xs text-red-500 mt-2 flex items-center gap-1">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                </svg>
+                            <span className="cp-error-msg" style={{ marginTop: '8px' }}>
+                                <svg width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
                                 {errors.images}
                             </span>
                         )}
 
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            multiple
-                            className="hidden"
-                            onChange={(e) => addFiles(e.target.files)}
-                        />
+                        <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" style={{ display: 'none' }} onChange={(e) => addFiles(e.target.files)} />
 
-                        {/* Previews */}
                         {images.length > 0 && (
-                            <div className="flex flex-wrap gap-3 mt-4">
+                            <div className="cp-preview-grid">
                                 {images.map((img, i) => (
-                                    <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200 group">
-                                        <img src={img.preview} alt={`preview-${i}`} className="w-full h-full object-cover" />
-                                        <button
-                                            type="button"
-                                            onClick={() => removeImage(i)}
-                                            className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center justify-center cursor-pointer border-none"
-                                            title="Remove"
-                                        >
-                                            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
+                                    <div key={i} className="cp-preview-item">
+                                        <img src={img.preview} alt={`preview-${i}`} />
+                                        <button type="button" onClick={() => removeImage(i)} className="cp-preview-remove" title="Remove">
+                                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                                         </button>
-                                        {/* first image badge */}
-                                        {i === 0 && (
-                                            <span className="absolute bottom-1 left-1 text-[9px] font-semibold bg-black/70 text-white px-1.5 py-0.5 rounded">
-                                                Cover
-                                            </span>
-                                        )}
+                                        {i === 0 && <span className="cp-preview-badge">Cover</span>}
                                     </div>
                                 ))}
-
-                                {/* Add more slot */}
                                 {images.length < 6 && (
-                                    <button
-                                        type="button"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-300 hover:border-gray-400 hover:text-gray-500 transition-all duration-150 cursor-pointer bg-transparent"
-                                    >
-                                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                        </svg>
+                                    <button type="button" onClick={() => fileInputRef.current?.click()} className="cp-preview-add">
+                                        <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                                     </button>
                                 )}
                             </div>
                         )}
                     </section>
 
-                    {/* ── ACTION BAR ── */}
-                    <div className="flex items-center justify-between pt-1">
-                        <p className="text-xs text-gray-400">
-                            <span className="text-gray-900 font-semibold">*</span> Required fields
-                        </p>
-                        <div className="flex items-center gap-3">
-                            <button
-                                type="button"
-                                onClick={() => navigate(-1)}
-                                className="px-5 py-2.5 text-sm font-medium text-gray-500 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all duration-150 cursor-pointer"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={loading}
-                                className={`flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-gray-900 border border-gray-900 rounded-lg transition-all duration-150
-                  ${loading ? 'opacity-60 cursor-not-allowed' : 'hover:bg-gray-700 active:scale-[0.98] cursor-pointer'}`}
-                            >
+                    {/* ACTION BAR */}
+                    <div className="cp-action-bar">
+                        <p className="cp-req-text"><span>*</span> Required fields</p>
+                        <div className="cp-actions">
+                            <button type="button" onClick={() => navigate(-1)} className="cp-btn-cancel">Cancel</button>
+                            <button type="submit" disabled={loading} className="cp-btn-submit">
                                 {loading ? (
                                     <>
-                                        <Spinner />
-                                        Creating…
+                                        <Spinner /> Creating…
                                     </>
                                 ) : (
                                     <>
-                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                        </svg>
+                                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
                                         Create Product
                                     </>
                                 )}
                             </button>
                         </div>
                     </div>
-
                 </form>
             </main>
 
-            {/* ── Toast ── */}
-            {toast && (
-                <div className="fixed bottom-8 right-8 z-50 flex items-center gap-2 bg-gray-900 text-white text-sm font-medium px-5 py-3 rounded-lg shadow-2xl animate-[slideUp_0.3s_ease]">
-                    {toast}
-                </div>
-            )}
-
-            <style>{`
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
+            {/* Toast */}
+            {toast && <div className="cp-toast">{toast}</div>}
         </div>
     );
 }
 
-/* ─── Spinner ─── */
 function Spinner() {
     return (
-        <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
+        <svg style={{ width: '16px', height: '16px', animation: 'spin 1s linear infinite' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" d="M12 2a10 10 0 0 1 10 10" />
+            <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
         </svg>
     );
 }
