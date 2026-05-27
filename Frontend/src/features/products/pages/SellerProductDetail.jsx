@@ -24,9 +24,9 @@ body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
 /* Product Header */
 .spd-header-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 24px; }
 @media(min-width: 768px) { .spd-header-card { flex-direction: row; } }
-.spd-header-img { width: 100%; aspect-ratio: 1; border-radius: 8px; border: 1px solid #f3f4f6; object-fit: cover; }
+.spd-header-img { width: 100%; aspect-ratio: 3/4; border-radius: 8px; border: 1px solid #f3f4f6; object-fit: cover; object-position: top center; }
 @media(min-width: 768px) { .spd-header-img { width: 200px; flex-shrink: 0; } }
-.spd-header-no-img { width: 100%; aspect-ratio: 1; border-radius: 8px; background: #f9fafb; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #9ca3af; }
+.spd-header-no-img { width: 100%; aspect-ratio: 3/4; border-radius: 8px; background: #f9fafb; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #9ca3af; }
 @media(min-width: 768px) { .spd-header-no-img { width: 200px; flex-shrink: 0; } }
 .spd-header-info { display: flex; flex-direction: column; justify-content: center; }
 .spd-header-title { font-size: 1.5rem; font-weight: 700; color: #111; line-height: 1.2; }

@@ -30,7 +30,7 @@ const cartSchema = new mongoose.Schema({
     ],
     price: {
         type: priceSchema,
-       
+
     }
 })
 

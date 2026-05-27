@@ -42,8 +42,8 @@ const css = `
 /* Product card */
 .gsp-card { background: #fff; border: 1px solid #e8e8e8; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; overflow: hidden; }
 .gsp-card:hover { border-color: #ccc; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
-.gsp-card-img-wrap { aspect-ratio: 4/3; background: #f5f5f5; overflow: hidden; position: relative; }
-.gsp-card-img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+.gsp-card-img-wrap { aspect-ratio: 3/4; background: #f5f5f5; overflow: hidden; position: relative; }
+.gsp-card-img-wrap img { width: 100%; height: 100%; object-fit: cover; object-position: top center; transition: transform 0.4s ease; }
 .gsp-card:hover .gsp-card-img-wrap img { transform: scale(1.04); }
 .gsp-card-no-img { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #ddd; }
 .gsp-card-no-img span { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -58,7 +58,7 @@ const css = `
 
 /* Skeleton */
 .gsp-skeleton { background: #fff; border: 1px solid #e8e8e8; overflow: hidden; }
-.gsp-skel-img { aspect-ratio: 4/3; background: #f0f0f0; animation: gsp-pulse 1.4s ease-in-out infinite; }
+.gsp-skel-img { aspect-ratio: 3/4; background: #f0f0f0; animation: gsp-pulse 1.4s ease-in-out infinite; }
 .gsp-skel-body { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 .gsp-skel-row { display: flex; justify-content: space-between; gap: 10px; }
 .gsp-skel-line { background: #f0f0f0; height: 12px; border-radius: 2px; animation: gsp-pulse 1.4s ease-in-out infinite; }
