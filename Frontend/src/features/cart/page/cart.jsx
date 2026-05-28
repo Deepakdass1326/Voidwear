@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useSelector } from 'react-redux';
 import { useCart } from '../hook/usecart';
+import { useRazorpay } from "react-razorpay";
 
 const SYM = { INR: '₹', USD: '$', EUR: '€', GBP: '£' };
 
@@ -118,10 +119,12 @@ export default function CartPage() {
     const currency = useSelector(state => state.cart?.currency || 'INR');
     const sym = SYM[currency] || '₹';
 
-    const { handleFetchCart, handleUpdateQuantity, handleRemoveItem } = useCart();
+    const { handleFetchCart, handleUpdateQuantity, handleRemoveItem, handleCreateOrder,handleVerifyOrder } = useCart();
 
     const [loading, setLoading] = useState(true);
     const [updatingId, setUpdatingId] = useState(null); // variantId being updated
+    const {error, isLoading, Razorpay} = useRazorpay()
+
 
     useEffect(() => {
         async function fetchCart() {
@@ -159,6 +162,38 @@ export default function CartPage() {
             console.error('Remove failed:', e);
         }
     };
+
+    async function handleCheckout(){
+        const data = await handleCreateOrder();
+        const order = data?.order;
+        console.log(order)
+        const options = {
+      key: "rzp_test_Sut01VoJKutumi",
+      amount: order.amount, // Amount in paise
+      currency: order.currency,
+      name: "Voidwear",
+      description: "Test Transaction",
+      order_id: order.id, // Generate order_id on server
+      handler: async(response) => {
+        const isValid = await handleVerifyOrder(response);
+        if(isValid){
+          navigate(`/order-success?order_id=${response?.razorpay_order_id}`);
+        }
+       
+      },
+      prefill: {
+        name: user?.fullname,
+        email: user?.email,
+        contact: user?.contact,
+      },
+      theme: {
+        color: "#111111",
+      },
+    };
+
+    const razorpayInstance = new Razorpay(options);
+    razorpayInstance.open();
+    }
 
     return (
         <>
@@ -282,7 +317,9 @@ export default function CartPage() {
                                 <button
                                     id="checkout-btn"
                                     className="checkout-btn"
-                                    onClick={() => navigate('/checkout')}
+                                    onClick={() => handleCheckout()}
+
+
                                 >
                                     Proceed to Checkout →
                                 </button>

@@ -1,5 +1,5 @@
 import { setCart, updateItemQuantity, removeItem as removeItemAction } from "../state/cart.slice";
-import { addItem, getCart, updateQuantity, removeItem } from "../service/cart.api";
+import { addItem, getCart, updateQuantity, removeItem, createPaymentOrder,verifyOrder } from "../service/cart.api";
 import { useDispatch } from "react-redux";
 
 export const useCart = () => {
@@ -46,8 +46,26 @@ export const useCart = () => {
         }
     }
 
-    return { handleAddItem, handleFetchCart, handleUpdateQuantity, handleRemoveItem };
+
+    async function handleCreateOrder() {
+        const data = await createPaymentOrder();
+        return data;
+    }
+
+    async function handleVerifyOrder({
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature
+    }){
+      const data = await verifyOrder({razorpay_order_id,razorpay_payment_id,razorpay_signature});
+      return data.success;
+    }
+
+    return { handleAddItem, handleFetchCart, handleUpdateQuantity, handleRemoveItem, handleCreateOrder,handleVerifyOrder };
 };
+
+
+
 
 // Keep old export for compatibility with ProductDetails.jsx
 export const addToCart = () => {

@@ -9,6 +9,7 @@ import ProductDetails from "../features/products/pages/ProductDetails";
 import SellerProductDetail from "../features/products/pages/SellerProductDetail";
 import NotFound from "../features/products/pages/NotFound";
 import CartPage from "../features/cart/page/cart";
+import OrderSuccess from "../features/cart/page/OrderSuccess";
 
 // ── Redirect helpers (must be defined before the router uses them) ──
 function RedirectProduct() {
@@ -46,6 +47,14 @@ export const routes = createBrowserRouter([
         element: (
             <Protected role="buyer">
                 <CartPage />
+            </Protected>
+        )
+    },
+    {
+        path: "/order-success",
+        element: (
+            <Protected role="buyer">
+                <OrderSuccess />
             </Protected>
         )
     },
