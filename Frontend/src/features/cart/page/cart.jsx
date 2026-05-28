@@ -71,34 +71,53 @@ body { font-family: 'Inter', sans-serif; background: #f7f7f5; color: #111; }
 
 const DUMMY_IMG = 'https://images.unsplash.com/photo-1556821840-3a63f95609a7?auto=format&fit=crop&q=80&w=400';
 
-function getVariant(product, variantId) {
-    if (!product?.variants) return null;
-    return product.variants.find(v => v._id?.toString() === variantId?.toString()) || null;
+// ── Aggregation-aware helpers ─────────────────────────────────────────────────
+// After aggregation: product details live at item.products (lookup result)
+//                    matched variant lives at item.products.variants (single object after $unwind)
+//                    pre-computed price lives at item.itemPrice
+
+function getUnitPrice(item) {
+    return item?.products?.variants?.price?.amount ?? 0;
 }
 
-function getPrice(variant, product) {
-    return variant?.price?.amount ?? product?.price?.amount ?? 0;
+function getCurrency(item) {
+    return item?.products?.variants?.price?.currency ?? 'INR';
 }
 
-function getCurrency(variant, product) {
-    return variant?.price?.currency ?? product?.price?.currency ?? 'INR';
+function getImage(item) {
+    // Prefer variant image, fall back to product image, then dummy
+    const variantImg = item?.products?.variants?.images?.[0]?.url;
+    const productImg = item?.products?.image?.[0]?.url;
+    return variantImg || productImg || DUMMY_IMG;
 }
 
-function getImage(variant, product) {
-    if (variant?.images?.[0]?.url) return variant.images[0].url;
-    if (product?.image?.[0]?.url) return product.image[0].url;
-    return DUMMY_IMG;
+function getVariantLabel(item) {
+    const attrs = item?.products?.variants?.attributes;
+    if (!attrs) return null;
+    return Object.values(attrs).map(v => String(v).split(',')[0].trim()).join(' · ');
 }
 
-function getVariantLabel(variant) {
-    if (!variant?.attributes) return null;
-    return Object.values(variant.attributes).map(v => String(v).split(',')[0].trim()).join(' · ');
+// Extract IDs needed for update/remove API calls
+function getProductId(item) {
+    // item.products._id is the populated product ObjectId
+    return item?.products?._id?.toString();
 }
+
+function getVariantId(item) {
+    // item.variant is the raw ObjectId ref stored on the cart item
+    return item?.variant?.toString();
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function CartPage() {
     const navigate = useNavigate();
     const user = useSelector(state => state.auth?.user);
     const items = useSelector(state => state.cart?.items || []);
+    // totalPrice and currency come directly from the aggregation via Redux
+    const totalPrice = useSelector(state => state.cart?.totalPrice || 0);
+    const currency = useSelector(state => state.cart?.currency || 'INR');
+    const sym = SYM[currency] || '₹';
+
     const { handleFetchCart, handleUpdateQuantity, handleRemoveItem } = useCart();
 
     const [loading, setLoading] = useState(true);
@@ -118,8 +137,8 @@ export default function CartPage() {
     }, []);
 
     const handleQtyChange = async (item, newQty) => {
-        const productId = item.product?._id?.toString();
-        const variantId = item.variant?.toString();
+        const productId = getProductId(item);
+        const variantId = getVariantId(item);
         if (newQty < 1) return;
         setUpdatingId(variantId);
         try {
@@ -132,26 +151,14 @@ export default function CartPage() {
     };
 
     const handleRemove = async (item) => {
-        const productId = item.product?._id?.toString();
-        const variantId = item.variant?.toString();
+        const productId = getProductId(item);
+        const variantId = getVariantId(item);
         try {
             await handleRemoveItem({ productId, variantId });
         } catch (e) {
             console.error('Remove failed:', e);
         }
     };
-
-    // Compute subtotal
-    const subtotal = items.reduce((acc, item) => {
-        const variant = getVariant(item.product, item.variant);
-        const price = getPrice(variant, item.product);
-        return acc + price * item.quantity;
-    }, 0);
-
-    const currency = items[0]
-        ? getCurrency(getVariant(items[0].product, items[0].variant), items[0].product)
-        : 'INR';
-    const sym = SYM[currency] || '₹';
 
     return (
         <>
@@ -192,50 +199,51 @@ export default function CartPage() {
                             {/* Items */}
                             <div className="cart-items">
                                 {items.map((item) => {
-                                    const product = item.product;
-                                    const variantId = item.variant?.toString();
-                                    const variant = getVariant(product, variantId);
-                                    const price = getPrice(variant, product);
-                                    const cur = getCurrency(variant, product);
+                                    const productId = getProductId(item);
+                                    const variantId = getVariantId(item);
+                                    const unitPrice = getUnitPrice(item);
+                                    const cur = getCurrency(item);
                                     const s = SYM[cur] || '₹';
-                                    const img = getImage(variant, product);
-                                    const label = getVariantLabel(variant);
+                                    const img = getImage(item);
+                                    const label = getVariantLabel(item);
                                     const isUpdating = updatingId === variantId;
+                                    // itemPrice is pre-calculated by the aggregation pipeline
+                                    const itemTotal = item.itemPrice ?? unitPrice * item.quantity;
 
                                     return (
-                                        <div key={`${product?._id}-${variantId}`} className="cart-item">
+                                        <div key={`${productId}-${variantId}`} className="cart-item">
                                             <img
                                                 src={img}
-                                                alt={product?.title || 'Product'}
+                                                alt={item.products?.title || 'Product'}
                                                 className="cart-item-img"
                                                 onError={e => { e.target.src = DUMMY_IMG; }}
                                             />
                                             <div className="cart-item-info">
-                                                <div className="cart-item-title">{product?.title || '—'}</div>
+                                                <div className="cart-item-title">{item.products?.title || '—'}</div>
                                                 {label && <div className="cart-item-variant">{label}</div>}
-                                                <div className="cart-item-price">{s}{price.toLocaleString()}</div>
+                                                <div className="cart-item-price">{s}{unitPrice.toLocaleString()}</div>
                                                 <div className="cart-item-total">
-                                                    Total: {s}{(price * item.quantity).toLocaleString()}
+                                                    Total: {s}{itemTotal.toLocaleString()}
                                                 </div>
 
                                                 <div className="qty-row">
                                                     <div className="qty-control">
                                                         <button
-                                                            id={`qty-dec-${product?._id}-${variantId}`}
+                                                            id={`qty-dec-${productId}-${variantId}`}
                                                             className="qty-btn"
                                                             disabled={item.quantity <= 1 || isUpdating}
                                                             onClick={() => handleQtyChange(item, item.quantity - 1)}
                                                         >−</button>
                                                         <span className="qty-num">{item.quantity}</span>
                                                         <button
-                                                            id={`qty-inc-${product?._id}-${variantId}`}
+                                                            id={`qty-inc-${productId}-${variantId}`}
                                                             className="qty-btn"
                                                             disabled={isUpdating}
                                                             onClick={() => handleQtyChange(item, item.quantity + 1)}
                                                         >+</button>
                                                     </div>
                                                     <button
-                                                        id={`remove-${product?._id}-${variantId}`}
+                                                        id={`remove-${productId}-${variantId}`}
                                                         className="remove-btn"
                                                         onClick={() => handleRemove(item)}
                                                     >
@@ -252,22 +260,24 @@ export default function CartPage() {
                             <div className="cart-summary">
                                 <div className="summary-title">Order Summary</div>
                                 {items.map((item) => {
-                                    const variant = getVariant(item.product, item.variant);
-                                    const price = getPrice(variant, item.product);
-                                    const s = SYM[getCurrency(variant, item.product)] || '₹';
+                                    const productId = getProductId(item);
+                                    const variantId = getVariantId(item);
+                                    const s = SYM[getCurrency(item)] || '₹';
+                                    const itemTotal = item.itemPrice ?? getUnitPrice(item) * item.quantity;
                                     return (
-                                        <div key={`${item.product?._id}-${item.variant}`} className="summary-row">
+                                        <div key={`${productId}-${variantId}`} className="summary-row">
                                             <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                {item.product?.title || '—'} × {item.quantity}
+                                                {item.products?.title || '—'} × {item.quantity}
                                             </span>
-                                            <span>{s}{(price * item.quantity).toLocaleString()}</span>
+                                            <span>{s}{itemTotal.toLocaleString()}</span>
                                         </div>
                                     );
                                 })}
                                 <hr className="summary-divider" />
                                 <div className="summary-total-row">
                                     <span>Subtotal</span>
-                                    <span>{sym}{subtotal.toLocaleString()}</span>
+                                    {/* totalPrice comes directly from the $group stage of the aggregation */}
+                                    <span>{sym}{totalPrice.toLocaleString()}</span>
                                 </div>
                                 <button
                                     id="checkout-btn"
@@ -284,3 +294,4 @@ export default function CartPage() {
         </>
     );
 }
+

@@ -1,6 +1,7 @@
 import cartModel from "../models/cart.model.js";
 import productModel from "../models/product.models.js";
 import { stockOfVariants } from "../dao/product.dao.js";
+import mongoose from "mongoose";
 
 
 export const addToCart = async (req, res) => {
@@ -87,16 +88,73 @@ export const addToCart = async (req, res) => {
 export const getCart = async (req, res) => {
     const user = req.user;
 
-    let cart = await cartModel.findOne({ user: user._id }).populate('items.product');
+    let cart = await cartModel.aggregate([
+        {
+            $match: {
+                user: new mongoose.Types.ObjectId(user._id)
+            }
+        },
+        { $unwind: { path: '$items' } },
+        {
+            $lookup: {
+                from: 'products',
+                localField: 'items.product',
+                foreignField: '_id',
+                as: 'items.products'
+            }
+        },
+        { $unwind: { path: '$items.products' } },
+        {
+            $unwind: {
+                path: '$items.products.variants'
+            }
+        },
+        {
+            $match: {
+                $expr: {
+                    $eq: [
+                        '$items.variant',
+                        '$items.products.variants._id'
+                    ]
+                }
+            }
+        },
+        {
+            $addFields: {
+                'items.itemPrice': {
+                    $multiply: [
+                        '$items.quantity',
+                        '$items.products.variants.price.amount'
+                    ]
+                }
+            }
+        },
+        {
+            $group: {
+                _id: '$_id',
+                totalPrice: { $sum: '$items.itemPrice' },
+                currency: {
+                    $first:
+                        '$items.products.variants.price.currency'
+                },
+                items: { $push: '$items' }
+            }
+        }
+    ]);
 
-    if (!cart) {
-        cart = await cartModel.create({ user: user._id });
+    if (!cart || cart.length === 0) {
+        const newCart = await cartModel.create({ user: user._id });
+        return res.status(200).json({
+            message: "Cart fetched successfully",
+            success: true,
+            cart: newCart
+        });
     }
 
     return res.status(200).json({
         message: "Cart fetched successfully",
         success: true,
-        cart
+        cart: cart[0]
     });
 };
 
@@ -125,13 +183,13 @@ export const updateQuantity = async (req, res) => {
         filter,
         { $set: { "items.$.quantity": quantity } },
         { new: true }
-    ).populate('items.product');
+    );
 
     if (!cart) {
         return res.status(404).json({ message: "Cart item not found", success: false });
     }
 
-    return res.status(200).json({ message: "Quantity updated", success: true, cart });
+    return res.status(200).json({ message: "Quantity updated", success: true });
 };
 
 export const removeItem = async (req, res) => {
@@ -144,15 +202,15 @@ export const removeItem = async (req, res) => {
         ? { product: productId, variant: resolvedVariantId }
         : { product: productId, variant: null };
 
-    const cart = await cartModel.findOneAndUpdate(
+    const updated = await cartModel.findOneAndUpdate(
         { user: req.user._id },
         { $pull: { items: pullCondition } },
         { new: true }
-    ).populate('items.product');
+    );
 
-    if (!cart) {
+    if (!updated) {
         return res.status(404).json({ message: "Cart not found", success: false });
     }
 
-    return res.status(200).json({ message: "Item removed", success: true, cart });
+    return res.status(200).json({ message: "Item removed", success: true });
 };
