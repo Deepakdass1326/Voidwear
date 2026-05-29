@@ -1,7 +1,7 @@
 import express from "express"
 import { authenticateUser } from "../middleware/auth.middleware.js"
 import { validateAddToCart } from "../validation/cart.validator.js"
-import { addToCart, getCart, updateQuantity, removeItem, createPaymentOrder, verifyOrder } from "../controllers/cart.controller.js"
+import { addToCart, getCart, updateQuantity, removeItem, createPaymentOrder, verifyOrder, getUserOrders } from "../controllers/cart.controller.js"
 
 
 const router = express.Router()
@@ -51,7 +51,20 @@ router.delete('/remove/:productId/:variantId', authenticateUser, removeItem)
 
 router.post('/payment/create/order', authenticateUser,createPaymentOrder)
 
+/**
+ * @route POST /api/cart/payment/verify/order
+ * @desc Verify order payment
+ * @access Private
+ * @augments 
+ */
+
 router.post('/payment/verify/order', authenticateUser, verifyOrder)
 
-export default router
+/**
+ * @route GET /api/cart/payment/orders
+ * @desc Get all orders for the logged-in buyer
+ * @access Private
+ */
+router.get('/payment/orders', authenticateUser, getUserOrders)
 
+export default router

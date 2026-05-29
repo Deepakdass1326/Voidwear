@@ -262,3 +262,14 @@ export const verifyOrder = async (req, res) => {
         message: "Payment verified successfully",
     });
 }
+
+export const getUserOrders = async (req, res) => {
+    const orders = await paymentModel
+        .find({ user: req.user._id, status: "success" })
+        .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+        success: true,
+        orders,
+    });
+}

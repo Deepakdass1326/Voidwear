@@ -48,3 +48,8 @@ export const verifyOrder = async({razorpay_order_id,razorpay_payment_id,razorpay
     });
     return response.data;
 }
+
+export const getUserOrders = async () => {
+    const response = await cartAPIInstance.get('/payment/orders');
+    return response.data;
+}

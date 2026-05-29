@@ -10,6 +10,7 @@ import SellerProductDetail from "../features/products/pages/SellerProductDetail"
 import NotFound from "../features/products/pages/NotFound";
 import CartPage from "../features/cart/page/cart";
 import OrderSuccess from "../features/cart/page/OrderSuccess";
+import Orders from "../features/cart/page/Orders";
 
 // ── Redirect helpers (must be defined before the router uses them) ──
 function RedirectProduct() {
@@ -112,6 +113,17 @@ export const routes = createBrowserRouter([
             },
         ]
     },
+
+    // ── Buyer Orders ─────────────────────────────────────────
+    {
+        path: "/orders",
+        element: (
+            <Protected role="buyer">
+                <Orders />
+            </Protected>
+        )
+    },
+
 
     // ── 404 catch-all ────────────────────────────────────────
     {

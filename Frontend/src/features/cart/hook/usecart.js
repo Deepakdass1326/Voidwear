@@ -1,5 +1,5 @@
 import { setCart, updateItemQuantity, removeItem as removeItemAction } from "../state/cart.slice";
-import { addItem, getCart, updateQuantity, removeItem, createPaymentOrder,verifyOrder } from "../service/cart.api";
+import { addItem, getCart, updateQuantity, removeItem, createPaymentOrder, verifyOrder, getUserOrders } from "../service/cart.api";
 import { useDispatch } from "react-redux";
 
 export const useCart = () => {
@@ -61,13 +61,16 @@ export const useCart = () => {
       return data.success;
     }
 
-    return { handleAddItem, handleFetchCart, handleUpdateQuantity, handleRemoveItem, handleCreateOrder,handleVerifyOrder };
+    async function handleGetUserOrders() {
+        const data = await getUserOrders();
+        return data.orders;
+    }
+
+    return { handleAddItem, handleFetchCart, handleUpdateQuantity, handleRemoveItem, handleCreateOrder, handleVerifyOrder, handleGetUserOrders };
 };
 
 
 
-
-// Keep old export for compatibility with ProductDetails.jsx
 export const addToCart = () => {
     const { handleAddItem } = useCart();
     return { handleAddItem };
