@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router';
+import { useNavigate, Navigate } from 'react-router';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../../cart/hook/usecart';
 import { setUser } from '../../auth/state/auth.slice';
@@ -106,6 +106,11 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
+  // Sellers should not see the buyer shop — redirect them to their dashboard
+  if (user?.role === 'seller') {
+    return <Navigate to="/seller/products" replace />;
+  }
+
   const handleLogout = async () => {
     await logoutUser();
     dispatch(setUser(null));
@@ -138,10 +143,10 @@ export default function Home() {
   return (
     <div>
       <style>{css}</style>
-      
+
       <nav className="nav">
         <div className="nav-left">
-           <span className="nav-link" onClick={() => navigate('/')}>Collections</span>
+          <span className="nav-link" onClick={() => navigate('/')}>Collections</span>
         </div>
         <div className="nav-center">
           <span className="nav-logo" onClick={() => navigate('/')}>voidwear.</span>
@@ -185,7 +190,7 @@ export default function Home() {
             <input type="text" placeholder="Search collection..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
           <div className="products-count">
-             {filtered.length} {filtered.length === 1 ? 'Product' : 'Products'}
+            {filtered.length} {filtered.length === 1 ? 'Product' : 'Products'}
           </div>
         </div>
 
@@ -223,8 +228,8 @@ export default function Home() {
       <footer className="footer">
         <div className="footer-grid">
           <div className="footer-col">
-            <div className="footer-logo" style={{marginBottom: 16}}>voidwear.</div>
-            <p style={{color: '#666', fontSize: 14, lineHeight: 1.6, maxWidth: 250}}>
+            <div className="footer-logo" style={{ marginBottom: 16 }}>voidwear.</div>
+            <p style={{ color: '#666', fontSize: 14, lineHeight: 1.6, maxWidth: 250 }}>
               Redefining contemporary streetwear with minimal design and premium quality.
             </p>
           </div>
@@ -248,7 +253,7 @@ export default function Home() {
           </div>
           <div className="footer-col">
             <h4>Newsletter</h4>
-            <p style={{color: '#666', fontSize: 14, marginBottom: 16}}>Subscribe to receive updates, access to exclusive deals, and more.</p>
+            <p style={{ color: '#666', fontSize: 14, marginBottom: 16 }}>Subscribe to receive updates, access to exclusive deals, and more.</p>
             <input type="email" placeholder="Enter your email" className="newsletter-input" />
           </div>
         </div>

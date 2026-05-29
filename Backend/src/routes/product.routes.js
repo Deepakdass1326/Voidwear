@@ -1,7 +1,7 @@
 import express from "express"
 import { authenticateSeller } from "../middleware/auth.middleware.js"
 import multer from "multer"
-import { createProduct, getProducts, getProductDetails, addProductVariants } from "../controllers/product.controller.js"
+import { createProduct, getProducts, getProductDetails, addProductVariants, updateVariantStock } from "../controllers/product.controller.js"
 import { createProductValidation } from "../validation/product.validator.js"
 import { getSellerProduct } from "../controllers/product.controller.js"
 
@@ -54,6 +54,12 @@ router.get("/detail/:id", getProductDetails)
  */
 router.post("/:productId/variants", authenticateSeller, upload.array("images", 7), addProductVariants)
 
+/**
+ * @description Update stock for a specific variant
+ * @route PATCH /api/products/:productId/variants/:variantId/stock
+ * @access Seller Only - Private
+ */
+router.patch("/:productId/variants/:variantId/stock", authenticateSeller, updateVariantStock)
 
 
 export default router

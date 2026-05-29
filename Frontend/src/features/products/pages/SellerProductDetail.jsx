@@ -124,7 +124,7 @@ body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; }
 const SellerProductDetail = () => {
     const navigate = useNavigate();
     const { productId } = useParams();
-    const { handleGetProductDetails, handleAddProductVariants } = useProducts();
+    const { handleGetProductDetails, handleAddProductVariants, handleUpdateVariantStock } = useProducts();
 
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -151,20 +151,37 @@ const SellerProductDetail = () => {
         }
     }
 
+    // Re-fetches without triggering the full loading screen
+    async function silentFetchProduct() {
+        if (!productId) return;
+        try {
+            const data = await handleGetProductDetails(productId);
+            setProduct(data);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
     useEffect(() => {
         fetchProduct();
     }, [productId]);
 
     const handleUpdateStock = async (variantId, newStock) => {
-        console.log(`Updating stock for variant ${variantId} to ${newStock}`);
-
-        // Optimistic UI update
-        setProduct(prev => {
-            const updatedVariants = prev.variants.map(v =>
+        // Optimistic UI update first
+        setProduct(prev => ({
+            ...prev,
+            variants: prev.variants.map(v =>
                 v._id === variantId ? { ...v, stock: newStock } : v
-            );
-            return { ...prev, variants: updatedVariants };
-        });
+            )
+        }));
+
+        try {
+            await handleUpdateVariantStock(productId, variantId, newStock);
+        } catch (e) {
+            console.error('Stock update failed:', e);
+            // Revert optimistic update silently (no loading flash)
+            silentFetchProduct();
+        }
     };
 
     const handleImageChange = (e) => {
@@ -469,11 +486,20 @@ const SellerProductDetail = () => {
                                                     </span>
                                                     {!hasVariantPrice && <span className="spd-vcard-price-base">(Base Price)</span>}
                                                 </div>
-                                                <div className="spd-vcard-attrs">
-                                                    {variant.attributes && Object.entries(variant.attributes).map(([key, val]) => (
-                                                        <span key={key} className="spd-vcard-attr">{key}: {val}</span>
-                                                    ))}
-                                                </div>
+                                                {variant.isDefault ? (
+                                                    <div className="spd-vcard-attrs">
+                                                        <span className="spd-vcard-attr" style={{ background: '#111', color: '#fff' }}>Base Product</span>
+                                                        {variant.attributes && Object.entries(variant.attributes).map(([key, val]) => (
+                                                            <span key={key} className="spd-vcard-attr">{key}: {val}</span>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="spd-vcard-attrs">
+                                                        {variant.attributes && Object.entries(variant.attributes).map(([key, val]) => (
+                                                            <span key={key} className="spd-vcard-attr">{key}: {val}</span>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
@@ -482,6 +508,7 @@ const SellerProductDetail = () => {
                                             <span className="spd-vcard-stock-label">Stock Available</span>
                                             <div className="spd-vcard-stock-ctrl">
                                                 <button
+                                                    type="button"
                                                     onClick={() => handleUpdateStock(variant._id, Math.max(0, variant.stock - 1))}
                                                     className="spd-vcard-stock-btn"
                                                 >
@@ -489,6 +516,7 @@ const SellerProductDetail = () => {
                                                 </button>
                                                 <span className="spd-vcard-stock-val">{variant.stock}</span>
                                                 <button
+                                                    type="button"
                                                     onClick={() => handleUpdateStock(variant._id, variant.stock + 1)}
                                                     className="spd-vcard-stock-btn"
                                                 >

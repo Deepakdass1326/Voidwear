@@ -97,7 +97,10 @@ export default function CreateProduct() {
         description: '',
         priceAmount: '',
         priceCurrency: 'INR',
+        stock: '',
     });
+
+    const [attributes, setAttributes] = useState([{ key: '', value: '' }]);
 
     const [images, setImages] = useState([]);
     const [errors, setErrors] = useState({});
@@ -158,7 +161,17 @@ export default function CreateProduct() {
             formData.append('description', form.description);
             formData.append('priceAmount', form.priceAmount);
             formData.append('priceCurrency', form.priceCurrency);
+            formData.append('stock', form.stock || '0');
             images.forEach(({ file }) => formData.append('images', file));
+
+            // Build attributes map from key-value pairs (skip empty rows)
+            const attrMap = {};
+            attributes.forEach(({ key, value }) => {
+                if (key.trim() && value.trim()) attrMap[key.trim()] = value.trim();
+            });
+            if (Object.keys(attrMap).length > 0) {
+                formData.append('attributes', JSON.stringify(attrMap));
+            }
 
             await handleCreateProduct(formData);
             showToast('✓  Product created successfully');
@@ -245,8 +258,8 @@ export default function CreateProduct() {
 
                     {/* PRICING */}
                     <section className="cp-section">
-                        <p className="cp-section-title">Pricing</p>
-                        <div className="cp-field-row">
+                        <p className="cp-section-title">Pricing & Stock</p>
+                        <div className="cp-field-row" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
                             <div className="cp-field">
                                 <label className="cp-label" htmlFor="priceAmount">Amount <span>*</span></label>
                                 <div className="cp-input-wrap">
@@ -290,6 +303,66 @@ export default function CreateProduct() {
                                     </svg>
                                 </div>
                             </div>
+
+                            <div className="cp-field">
+                                <label className="cp-label" htmlFor="stock">Stock <span>*</span></label>
+                                <input
+                                    id="stock"
+                                    name="stock"
+                                    type="number"
+                                    min="0"
+                                    placeholder="e.g. 50"
+                                    value={form.stock}
+                                    onChange={handleChange}
+                                    className="cp-input"
+                                />
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* ATTRIBUTES */}
+                    <section className="cp-section">
+                        <p className="cp-section-title">Attributes <span style={{ color: '#9ca3af', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(Optional — e.g. Size, Colour)</span></p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            {attributes.map((attr, idx) => (
+                                <div key={idx} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Size"
+                                        value={attr.key}
+                                        onChange={e => {
+                                            const updated = [...attributes];
+                                            updated[idx].key = e.target.value;
+                                            setAttributes(updated);
+                                        }}
+                                        className="cp-input"
+                                        style={{ flex: 1 }}
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. S,M,L,XL"
+                                        value={attr.value}
+                                        onChange={e => {
+                                            const updated = [...attributes];
+                                            updated[idx].value = e.target.value;
+                                            setAttributes(updated);
+                                        }}
+                                        className="cp-input"
+                                        style={{ flex: 2 }}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setAttributes(attributes.filter((_, i) => i !== idx))}
+                                        disabled={attributes.length === 1}
+                                        style={{ background: 'none', border: 'none', cursor: attributes.length === 1 ? 'not-allowed' : 'pointer', color: '#ef4444', fontSize: 18, lineHeight: 1, padding: '0 4px', opacity: attributes.length === 1 ? 0.3 : 1 }}
+                                    >×</button>
+                                </div>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={() => setAttributes([...attributes, { key: '', value: '' }])}
+                                style={{ alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: '#6b7280', fontFamily: 'Inter, sans-serif', padding: 0, marginTop: 4 }}
+                            >+ Add attribute</button>
                         </div>
                     </section>
 

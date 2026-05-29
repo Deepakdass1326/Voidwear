@@ -10,9 +10,12 @@ export const stockOfVariants = async (productId, variantId) => {
 
     if (!product) return 0;
 
-    // Base product (no variantId) — return total variant stock or a high number
+    // Base product (no variantId) — use the default variant's stock
     if (!variantId) {
-        if (!product.variants?.length) return 9999; // no variants defined — treat as unlimited
+        const defaultVariant = product.variants?.find(v => v.isDefault);
+        if (defaultVariant) return defaultVariant.stock ?? 0;
+        // Fallback for old products without a default variant
+        if (!product.variants?.length) return 9999;
         return product.variants.reduce((sum, v) => sum + (v.stock || 0), 0);
     }
 

@@ -31,6 +31,10 @@ const productSchema = new mongoose.Schema({
 
     variants: [
         {
+            isDefault: {
+                type: Boolean,
+                default: false
+            },
             images: [
                 {
                     url: {

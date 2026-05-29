@@ -2,7 +2,7 @@ import productModel from "../models/product.models.js";
 import { uploadImage } from "../services/storage.service.js";
 
 export async function createProduct(req, res) {
-    const { title, description, priceAmount, priceCurrency } = req.body
+    const { title, description, priceAmount, priceCurrency, stock, attributes } = req.body
     const seller = req.user
 
     console.log("req.files received:", req.files?.length, req.files?.map(f => f.originalname))
@@ -19,6 +19,12 @@ export async function createProduct(req, res) {
 
     console.log("Final image array to save:", JSON.stringify(image))
 
+    // Parse attributes if provided (e.g. { "Size": "S,M,L", "Colour": "Black" })
+    let parsedAttributes = {};
+    try {
+        if (attributes) parsedAttributes = JSON.parse(attributes);
+    } catch (_) {}
+
     const product = await productModel.create({
         title,
         description,
@@ -26,11 +32,22 @@ export async function createProduct(req, res) {
             amount: priceAmount,
             currency: priceCurrency || "INR"
         },
-
         image,
-
         seller: seller._id
     })
+
+    // Auto-create a default variant so the cart aggregation always has a variant to match
+    product.variants.push({
+        isDefault: true,
+        price: {
+            amount: Number(priceAmount),
+            currency: priceCurrency || "INR"
+        },
+        stock: Number(stock) || 0,
+        images: image,
+        attributes: Object.keys(parsedAttributes).length > 0 ? parsedAttributes : undefined
+    });
+    await product.save();
 
     res.status(201).json({
         Message: "Product created successfully",
@@ -133,4 +150,33 @@ export async function addProductVariants (req, res) {
         success: true,
         product
     })
+}
+
+export async function updateVariantStock(req, res) {
+    const { productId, variantId } = req.params;
+    const { stock } = req.body;
+
+    if (stock === undefined || stock < 0) {
+        return res.status(400).json({ message: "Invalid stock value", success: false });
+    }
+
+    const product = await productModel.findOneAndUpdate(
+        {
+            _id: productId,
+            seller: req.user._id,
+            "variants._id": variantId
+        },
+        { $set: { "variants.$.stock": Number(stock) } },
+        { new: true }
+    );
+
+    if (!product) {
+        return res.status(404).json({ message: "Product or variant not found", success: false });
+    }
+
+    return res.status(200).json({
+        message: "Stock updated successfully",
+        success: true,
+        product
+    });
 }

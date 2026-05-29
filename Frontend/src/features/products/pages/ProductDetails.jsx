@@ -214,9 +214,11 @@ const ProductDetails = () => {
     );
 
     const hasVariants = product.variants && product.variants.length > 0;
-    const activeVariant = (hasVariants && selectedVariantIdx !== null) ? product.variants[selectedVariantIdx] : null;
+    const defaultVariant = product.variants?.find(v => v.isDefault);
+    const hasRealVariants = product.variants?.some(v => !v.isDefault);
+    const activeVariant = (hasRealVariants && selectedVariantIdx !== null) ? product.variants.filter(v => !v.isDefault)[selectedVariantIdx] : null;
     const displayPrice = activeVariant?.price?.amount ? activeVariant.price : product.price;
-    const stockAvailable = activeVariant ? activeVariant.stock : null;
+    const stockAvailable = activeVariant ? activeVariant.stock : defaultVariant?.stock ?? null;
 
     const getImages = () => {
         if (activeVariant?.images?.length > 0) return activeVariant.images.map(img => img.url);
@@ -324,24 +326,15 @@ const ProductDetails = () => {
                     
                     <p className="pdp-desc">{product.description}</p>
 
-                    {/* ── All Variants Panel ── */}
-                    {hasVariants && (
+                    {/* ── All Variants Panel ── only show real variants */}
+                    {hasRealVariants && (
                         <div style={{ marginBottom: 40 }}>
                             <div className="pdp-section-title">
-                                <span>{product.variants.length} Variant{product.variants.length !== 1 ? 's' : ''} Available</span>
+                                <span>{product.variants.filter(v => !v.isDefault).length} Variant{product.variants.filter(v => !v.isDefault).length !== 1 ? 's' : ''} Available</span>
                             </div>
                             <div className="all-variants-scroll">
-                                {/* "Base product" option */}
-                                <div className="av-item" onClick={() => { setSelectedVariantIdx(null); setActiveImgIdx(0); }}>
-                                    <img
-                                        src={product.image?.[0]?.url}
-                                        className={`av-img ${selectedVariantIdx === null ? 'active' : ''}`}
-                                        alt="Base"
-                                    />
-                                    <span className="av-label">Base</span>
-                                </div>
-                                {/* Each variant */}
-                                {product.variants.map((v, idx) => (
+                                {/* Each real variant */}
+                                {product.variants.filter(v => !v.isDefault).map((v, idx) => (
                                     <div
                                         key={idx}
                                         className="av-item"
@@ -359,10 +352,11 @@ const ProductDetails = () => {
                         </div>
                     )}
 
-                    {/* ── Dynamic Attribute Selectors (shown once a variant is picked) ── */}
-                    {activeVariant?.attributes && (
+                    {/* ── Dynamic Attribute Selectors ── */}
+                    {/* Show active real variant's attributes, or default variant's attributes when no real variant selected */}
+                    {(activeVariant?.attributes || (!hasRealVariants && defaultVariant?.attributes)) && (
                         <div style={{ marginBottom: 40 }}>
-                            {Object.entries(activeVariant.attributes).map(([attrKey, attrVal]) => {
+                            {Object.entries((activeVariant ?? defaultVariant).attributes).map(([attrKey, attrVal]) => {
                                 const options = String(attrVal).split(',').map(s => s.trim()).filter(Boolean);
                                 const isMulti = options.length > 1;
                                 return (
@@ -398,36 +392,23 @@ const ProductDetails = () => {
                         </div>
                     )}
 
-                    {/* Fallback size selector */}
-                    {!hasVariants && (
-                        <div style={{ marginBottom: 40 }}>
-                            <div className="pdp-section-title">Select Size</div>
-                            <div className="size-selector">
-                                {['XS', 'S', 'M', 'L', 'XL'].map(size => (
-                                    <button
-                                        key={size}
-                                        className={`size-btn ${selectedOptions['Size'] === size ? 'selected' : ''}`}
-                                        onClick={() => setSelectedOptions(prev => ({ ...prev, Size: size }))}
-                                    >
-                                        {size}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+
+
 
                     <button onClick={() => {
                         if (!user) {
                             navigate('/login');
                             return;
                         }
-                        if (hasVariants && selectedVariantIdx === null) {
-                            alert('Please select a variant first');
+                        // Always send a variantId — use activeVariant or fall back to defaultVariant
+                        const variantToAdd = activeVariant ?? defaultVariant;
+                        if (!variantToAdd) {
+                            alert('No variant available for this product');
                             return;
                         }
                         handleAddItem({
                             productId: product._id,
-                            variantId: activeVariant ? activeVariant._id : undefined,
+                            variantId: variantToAdd._id,
                         });
                     }} className="add-to-cart-huge">
                         {user ? 'Add to Cart' : 'Login to Add to Cart'}
