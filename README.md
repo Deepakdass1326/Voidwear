@@ -154,22 +154,24 @@ Voidwear/
 - Filter and select variants (colour, size, fit)
 - Add to cart directly from product detail
 
-### 🛒 Cart System
+### 🛒 Cart & Checkout System
 - **MongoDB Aggregation Pipeline** — 8-stage pipeline computes:
   - Joins product details via `$lookup`
-  - Matches selected variant via `$unwind` + `$match`
+  - Matches selected variant via `$unwind` + `$match` (automatically handles base products via default variants)
   - Calculates per-item price via `$addFields`
   - Sums total cart value via `$group`
 - **Optimistic UI updates** — quantity changes reflect instantly
 - Add, update quantity, and remove items
-- Per-item price and total displayed from DB-computed values
+- **Razorpay Integration** — full checkout flow with HMAC signature verification
+- **Order History** — view past successful orders with item breakdown and status
 - Currency symbol auto-mapped (₹, $, €, £)
 
 ### 🏪 Seller Dashboard
 - Create new products with up to 7 images (uploaded to ImageKit CDN)
-- Add product variants with individual pricing, stock, and images
+- Base products automatically get a hidden "default variant" to ensure seamless cart aggregation
+- Add product variants with individual pricing, stock, attributes (Size/Colour), and images
 - View all seller-owned products
-- Product detail management
+- Product detail and stock management without page reloads
 
 ### 🖼️ Image Management (ImageKit CDN)
 - Images uploaded server-side via Multer → ImageKit
@@ -208,6 +210,9 @@ Voidwear/
 | `POST` | `/add/:productId/:variantId` | Add item to cart | Buyer |
 | `PATCH` | `/update/:productId/:variantId` | Update item quantity | Buyer |
 | `DELETE` | `/remove/:productId/:variantId` | Remove item from cart | Buyer |
+| `POST` | `/payment/create/order` | Create Razorpay order | Buyer |
+| `POST` | `/payment/verify/order` | Verify Razorpay payment signature | Buyer |
+| `GET` | `/payment/orders` | Get user order history | Buyer |
 
 ---
 
@@ -420,253 +425,18 @@ The frontend proxies `/api` requests to the backend, so no CORS issues in develo
 
 ## Razorpay Payment Integration
 
-> **Planned Feature** — Follow this guide to integrate Razorpay checkout into the existing cart & checkout flow.
+The platform includes a fully working Razorpay checkout integration with secure backend verification.
 
-### Overview
+### Flow Overview
 
-Razorpay uses a **two-step flow**:
-1. **Backend** creates an order and returns `order_id` + `amount`
-2. **Frontend** opens the Razorpay checkout modal using that order
-3. **Backend** verifies the payment signature to confirm success
-
----
-
-### Step 1 — Install Razorpay SDK (Backend)
-
-```bash
-cd Backend
-npm install razorpay
-```
-
-### Step 2 — Add Environment Variables
-
-```env
-RAZORPAY_KEY_ID=rzp_test_xxxxxxxxxxxx
-RAZORPAY_KEY_SECRET=your_razorpay_secret
-```
-
-### Step 3 — Create Payment Controller
-
-Create `Backend/src/controllers/payment.controller.js`:
-
-```js
-import Razorpay from 'razorpay';
-import crypto from 'crypto';
-
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
-
-// POST /api/payment/create-order
-export const createOrder = async (req, res) => {
-  const { amount, currency = 'INR' } = req.body;
-
-  const options = {
-    amount: amount * 100, // Razorpay expects paise
-    currency,
-    receipt: `receipt_${Date.now()}`,
-  };
-
-  const order = await razorpay.orders.create(options);
-
-  return res.status(200).json({
-    success: true,
-    order_id: order.id,
-    amount: order.amount,
-    currency: order.currency,
-    key: process.env.RAZORPAY_KEY_ID,
-  });
-};
-
-// POST /api/payment/verify
-export const verifyPayment = async (req, res) => {
-  const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-
-  const body = razorpay_order_id + '|' + razorpay_payment_id;
-  const expectedSignature = crypto
-    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-    .update(body)
-    .digest('hex');
-
-  if (expectedSignature !== razorpay_signature) {
-    return res.status(400).json({ success: false, message: 'Payment verification failed' });
-  }
-
-  // ✅ Payment verified — create order record, clear cart, etc.
-  return res.status(200).json({ success: true, message: 'Payment verified successfully' });
-};
-```
-
-### Step 4 — Create Payment Routes
-
-Create `Backend/src/routes/payment.routes.js`:
-
-```js
-import { Router } from 'express';
-import { createOrder, verifyPayment } from '../controllers/payment.controller.js';
-import { authenticateUser } from '../middleware/auth.middleware.js';
-
-const router = Router();
-
-router.post('/create-order', authenticateUser, createOrder);
-router.post('/verify', authenticateUser, verifyPayment);
-
-export default router;
-```
-
-Register in `src/app.js`:
-```js
-import paymentRouter from './routes/payment.routes.js';
-app.use('/api/payment', paymentRouter);
-```
-
-### Step 5 — Frontend Razorpay Checkout
-
-Install the Razorpay script loader:
-```bash
-cd Frontend
-npm install razorpay
-```
-
-Create `Frontend/src/features/cart/service/payment.api.js`:
-
-```js
-import axios from 'axios';
-
-const paymentAPI = axios.create({ baseURL: '/api/payment', withCredentials: true });
-
-export const createRazorpayOrder = async (amount) => {
-  const { data } = await paymentAPI.post('/create-order', { amount });
-  return data;
-};
-
-export const verifyRazorpayPayment = async (paymentData) => {
-  const { data } = await paymentAPI.post('/verify', paymentData);
-  return data;
-};
-```
-
-Create `Frontend/src/features/cart/hook/usePayment.js`:
-
-```js
-import { createRazorpayOrder, verifyRazorpayPayment } from '../service/payment.api';
-
-export const usePayment = () => {
-  const handleCheckout = async ({ totalPrice, currency, userName, userEmail }) => {
-    // 1. Create order on backend
-    const orderData = await createRazorpayOrder(totalPrice);
-
-    // 2. Load Razorpay script dynamically
-    await loadRazorpayScript();
-
-    // 3. Open Razorpay checkout modal
-    return new Promise((resolve, reject) => {
-      const options = {
-        key: orderData.key,
-        amount: orderData.amount,
-        currency: orderData.currency,
-        name: 'Voidwear',
-        description: 'Fashion Purchase',
-        order_id: orderData.order_id,
-        handler: async (response) => {
-          try {
-            // 4. Verify payment on backend
-            const result = await verifyRazorpayPayment(response);
-            resolve(result);
-          } catch (err) {
-            reject(err);
-          }
-        },
-        prefill: { name: userName, email: userEmail },
-        theme: { color: '#111111' },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.on('payment.failed', reject);
-      rzp.open();
-    });
-  };
-
-  return { handleCheckout };
-};
-
-function loadRazorpayScript() {
-  return new Promise((resolve) => {
-    if (window.Razorpay) return resolve();
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = resolve;
-    document.body.appendChild(script);
-  });
-}
-```
-
-### Step 6 — Wire to Checkout Button
-
-In `cart.jsx`, replace the checkout button handler:
-
-```jsx
-import { usePayment } from '../hook/usePayment';
-
-// Inside CartPage component:
-const { handleCheckout } = usePayment();
-const user = useSelector(state => state.auth?.user);
-
-const handleProceedToCheckout = async () => {
-  try {
-    await handleCheckout({
-      totalPrice,
-      currency,
-      userName: user?.name,
-      userEmail: user?.email,
-    });
-    alert('Payment successful! Order placed.');
-    navigate('/orders');
-  } catch (err) {
-    alert('Payment failed. Please try again.');
-  }
-};
-
-// In JSX:
-<button
-  id="checkout-btn"
-  className="checkout-btn"
-  onClick={handleProceedToCheckout}
->
-  Proceed to Checkout →
-</button>
-```
-
-### Razorpay Flow Diagram
-
-```
-User clicks "Proceed to Checkout"
-        │
-        ▼
-Frontend → POST /api/payment/create-order (amount, currency)
-        │
-        ▼
-Backend → razorpay.orders.create() → returns order_id
-        │
-        ▼
-Frontend → Opens Razorpay modal (order_id, key)
-        │
-        ▼
-User completes payment on Razorpay modal
-        │
-        ▼
-Frontend → POST /api/payment/verify (order_id, payment_id, signature)
-        │
-        ▼
-Backend → HMAC signature verification
-        │
-   ┌────┴────┐
-   ✅ Pass   ❌ Fail
-   │              │
-Order placed   400 Error
-Cart cleared   shown to user
-```
+1. **User clicks "Proceed to Checkout"**
+2. **Frontend** calls `POST /api/cart/payment/create/order`
+3. **Backend** initializes an order via `razorpay.orders.create()` and returns the `orderId` and amount.
+4. **Frontend** opens the Razorpay checkout modal pre-filled with user details.
+5. **User completes payment**
+6. **Frontend** receives the success response and calls `POST /api/cart/payment/verify/order` with the signature.
+7. **Backend** performs an HMAC SHA256 signature verification using the `RAZORPAY_KEY_SECRET`.
+8. On success, a `Payment` record is created, cart items are cleared, and the user is redirected to the `/order-success` page.
 
 ### Test Card Details (Razorpay Test Mode)
 
@@ -677,7 +447,7 @@ Cart cleared   shown to user
 | CVV | Any 3 digits |
 | OTP | `123456` |
 
-> Use `rzp_test_*` keys during development. Switch to `rzp_live_*` for production.
+> Use `rzp_test_*` keys in `.env` during development. Switch to `rzp_live_*` for production.
 
 ---
 
@@ -714,6 +484,6 @@ ISC © Voidwear
 
 ---
 
-<div align="center">
-Built with 🖤 by the Voidwear team
+<div align ="center">
+Built 🖤 by the Voidwear team
 </div>
