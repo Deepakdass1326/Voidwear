@@ -114,7 +114,13 @@ export const googleCallback = async (req, res) => {
     expiresIn: "7d"
   })
 
-  res.cookie("token", token)
+  const isProduction = config.NODE_ENV === 'production';
+  res.cookie("token", token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+  })
 
   // Redirect based on role — sellers go to their dashboard, buyers go to home
   const destination = user.role === 'seller'
