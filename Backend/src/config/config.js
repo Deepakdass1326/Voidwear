@@ -32,6 +32,12 @@ if (!process.env.RAZORPAY_KEY_ID) {
 if (!process.env.RAZORPAY_KEY_SECRET) {
     throw new Error("RAZORPAY_KEY_SECRET is not defined in environment variables")
 }
+if (!process.env.FRONTEND_URL) {
+    throw new Error("FRONTEND_URL is not defined in environment variables")
+}
+if (!process.env.BACKEND_URL) {
+    throw new Error("BACKEND_URL is not defined in environment variables")
+}
 
 export const config = {
     MONGO_URI: process.env.MONGO_URI,
@@ -43,7 +49,7 @@ export const config = {
     IMAGEKIT_URL_ENDPOINT: process.env.IMAGEKIT_URL_ENDPOINT,
     RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID,
     RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET,
-    FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
-    BACKEND_URL: process.env.BACKEND_URL || 'http://localhost:5000',
+    FRONTEND_URL: process.env.FRONTEND_URL,
+    BACKEND_URL: process.env.BACKEND_URL,
     NODE_ENV: process.env.NODE_ENV || 'development',
 }
