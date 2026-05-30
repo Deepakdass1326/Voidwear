@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const cartAPIInstance = axios.create({
-    baseURL: '/api/cart',
+    baseURL: `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/cart`,
     withCredentials: true
 });
 
@@ -39,9 +39,9 @@ export const createPaymentOrder = async () => {
     return response.data;
 }
 
-export const verifyOrder = async({razorpay_order_id,razorpay_payment_id,razorpay_signature})=>{
-  
-    const response = await cartAPIInstance.post('/payment/verify/order',{
+export const verifyOrder = async ({ razorpay_order_id, razorpay_payment_id, razorpay_signature }) => {
+
+    const response = await cartAPIInstance.post('/payment/verify/order', {
         razorpay_order_id,
         razorpay_payment_id,
         razorpay_signature

@@ -12,7 +12,13 @@ async function sendToken(user, res, message) {
     expiresIn: "7d"
   })
 
-  res.cookie("token", token)
+  const isProduction = config.NODE_ENV === 'production';
+  res.cookie("token", token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+  })
 
   res.status(200).json({
     message,
@@ -112,8 +118,8 @@ export const googleCallback = async (req, res) => {
 
   // Redirect based on role — sellers go to their dashboard, buyers go to home
   const destination = user.role === 'seller'
-    ? 'http://localhost:5173/seller/products'
-    : 'http://localhost:5173/';
+    ? `${config.FRONTEND_URL}/seller/products`
+    : `${config.FRONTEND_URL}/`;
 
   res.redirect(destination)
 

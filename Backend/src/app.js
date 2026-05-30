@@ -7,7 +7,7 @@ import passport from "passport"
 import { Strategy as GoogleStrategy } from "passport-google-oauth20"
 import { config } from "./config/config.js"
 import ProductRouter from "./routes/product.routes.js"
-import cartRouter from"./routes/cart.routes.js"
+import cartRouter from "./routes/cart.routes.js"
 
 
 
@@ -15,7 +15,7 @@ import cartRouter from"./routes/cart.routes.js"
 
 const app = express()
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: config.FRONTEND_URL,
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"]
 }))
@@ -23,7 +23,7 @@ app.use(cors({
 passport.use(new GoogleStrategy({
     clientID: config.GOOGLE_CLIENT_ID,
     clientSecret: config.GOOGLE_CLIENT_SECRET,
-    callbackURL: "http://localhost:5000/api/auth/google/callback"
+    callbackURL: `${config.BACKEND_URL}/api/auth/google/callback`
 }, (accessToken, refreshToken, profile, done) => {
     return done(null, profile)
 }))
