@@ -1,10 +1,8 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useNavigate, Navigate } from 'react-router';
 import { useProducts } from '../hooks/useProducts';
 import { useCart } from '../../cart/hook/usecart';
-import { setUser } from '../../auth/state/auth.slice';
-import { logoutUser } from '../../auth/service/auth.api';
 
 const SYM = { INR: '₹', USD: '$', EUR: '€', GBP: '£' };
 
@@ -97,7 +95,6 @@ body { font-family: 'Inter', sans-serif; background: #ffffff; color: #000000; ov
 
 export default function Home() {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const { handleGetProducts } = useProducts();
   const { handleAddItem } = useCart();
   const products = useSelector(state => state.product.products);
@@ -109,11 +106,6 @@ export default function Home() {
 
   // Sellers should not see the buyer shop — redirect them to their dashboard
 
-  const handleLogout = async () => {
-    await logoutUser();
-    dispatch(setUser(null));
-    navigate('/');
-  };
 
   const handleAddToCart = (e, product) => {
     e.stopPropagation();
@@ -169,7 +161,6 @@ export default function Home() {
                   {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
                 </button>
               )}
-              <button className="nav-link-logout" onClick={handleLogout}>Logout</button>
             </>
           ) : (
             <>
