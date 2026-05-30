@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router';
 import { useSelector, useDispatch } from 'react-redux';
 import { useProducts } from '../hooks/useProducts';
-import { addToCart } from '../../cart/hook/usecart';
+import { useCart } from '../../cart/hook/usecart';
 import { setUser } from '../../auth/state/auth.slice';
 import { logoutUser } from '../../auth/service/auth.api';
 
@@ -136,7 +136,7 @@ const ProductDetails = () => {
     const [activeImgIdx, setActiveImgIdx] = useState(0);
     const [openAccordion, setOpenAccordion] = useState(null);
 
-    const { handleAddItem } = addToCart();
+    const { handleAddItem } = useCart();
 
     const handleLogout = async () => {
         await logoutUser();

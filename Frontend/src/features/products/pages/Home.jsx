@@ -107,9 +107,6 @@ export default function Home() {
   const [search, setSearch] = useState('');
 
   // Sellers should not see the buyer shop — redirect them to their dashboard
-  if (user?.role === 'seller') {
-    return <Navigate to="/seller/products" replace />;
-  }
 
   const handleLogout = async () => {
     await logoutUser();
@@ -139,6 +136,10 @@ export default function Home() {
       p.description?.toLowerCase().includes(search.toLowerCase())
     );
   }, [products, search]);
+
+  if (user?.role === 'seller') {
+    return <Navigate to="/seller/products" replace />;
+  }
 
   return (
     <div>
