@@ -102,6 +102,7 @@ export default function Home() {
   const { handleAddItem } = useCart();
   const products = useSelector(state => state.product.products);
   const user = useSelector(state => state.auth?.user);
+  const authLoading = useSelector(state => state.auth?.loading);
   const cartCount = useSelector(state => state.cart?.items?.length || 0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -137,7 +138,9 @@ export default function Home() {
     );
   }, [products, search]);
 
-  if (user?.role === 'seller') {
+  // Wait for auth to resolve before redirecting sellers, to avoid
+  // redirecting unauthenticated users before getMe() finishes
+  if (!authLoading && user?.role === 'seller') {
     return <Navigate to="/seller/products" replace />;
   }
 
